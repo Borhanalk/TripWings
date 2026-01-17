@@ -1,0 +1,249 @@
+@{
+    ViewData["Title"] = "לוח בקרה למנהל";
+    var totalTrips = ViewBag.TotalTrips as int? ?? 0;
+    var activeTrips = ViewBag.ActiveTrips as int? ?? 0;
+    var totalCartItems = ViewBag.TotalCartItems as int? ?? 0;
+    var totalUsers = ViewBag.TotalUsers as int? ?? 0;
+    var totalBookings = ViewBag.TotalBookings as int? ?? 0;
+    var totalPayments = ViewBag.TotalPayments as int? ?? 0;
+    var totalWaitingListEntries = ViewBag.TotalWaitingListEntries as int? ?? 0;
+    var activeBookings = ViewBag.ActiveBookings as int? ?? 0;
+    var cancelledBookings = ViewBag.CancelledBookings as int? ?? 0;
+    var paidPayments = ViewBag.PaidPayments as int? ?? 0;
+    var totalRevenue = ViewBag.TotalRevenue as decimal? ?? 0;
+}
+
+<div class="container-fluid mt-4">
+    <div class="page-header mb-5">
+        <h1 class="display-5 mb-2 text-gradient">
+            <i class="bi bi-shield-check me-2"></i>לוח בקרה למנהל / Admin Dashboard
+        </h1>
+        <p class="lead text-muted">ניהול מלא של המערכת / Full System Management</p>
+    </div>
+
+    
+    <div class="row g-4 mb-5">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-airplane"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalTrips</h3>
+                    <p class="stat-label">סה"כ טיולים / Total Trips</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@activeTrips</h3>
+                    <p class="stat-label">טיולים פעילים / Active Trips</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalUsers</h3>
+                    <p class="stat-label">סה"כ משתמשים / Total Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalBookings</h3>
+                    <p class="stat-label">סה"כ הזמנות / Total Bookings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@activeBookings</h3>
+                    <p class="stat-label">הזמנות פעילות / Active Bookings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-danger">
+                <div class="stat-icon">
+                    <i class="bi bi-x-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@cancelledBookings</h3>
+                    <p class="stat-label">הזמנות בוטלו / Cancelled Bookings</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalPayments</h3>
+                    <p class="stat-label">סה"כ תשלומים / Total Payments</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="stat-card stat-card-success">
+                <div class="stat-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@paidPayments</h3>
+                    <p class="stat-label">תשלומים שולמו / Paid Payments</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4 col-sm-6">
+            <div class="stat-card stat-card-info">
+                <div class="stat-icon">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalWaitingListEntries</h3>
+                    <p class="stat-label">רשימת המתנה / Waiting List</p>
+                    <small class="text-muted">משתמשים ממתינים</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="stat-card stat-card-warning">
+                <div class="stat-icon">
+                    <i class="bi bi-cart"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalCartItems</h3>
+                    <p class="stat-label">פריטי עגלה / Cart Items</p>
+                    <small class="text-muted">בעגלות המשתמשים</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6">
+            <div class="stat-card stat-card-primary">
+                <div class="stat-icon">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div class="stat-content">
+                    <h3 class="stat-value">@totalRevenue.ToString("C")</h3>
+                    <p class="stat-label">סה"כ הכנסות / Total Revenue</p>
+                    <small class="text-muted">מכל התשלומים</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="admin-actions-section">
+        <div class="section-header mb-4">
+            <h3 class="section-title text-gradient">
+                <i class="bi bi-list-check me-2"></i>פעולות ניהול / Admin Actions
+            </h3>
+            <p class="section-subtitle">ניהול מלא של כל חלקי המערכת / Manage all system components</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <a asp-controller="AdminTravelPackage" asp-action="Index" class="admin-action-card admin-action-primary">
+                    <div class="action-icon">
+                        <i class="bi bi-airplane"></i>
+                    </div>
+                    <div class="action-content">
+                        <h5 class="action-title">ניהול חבילות טיולים</h5>
+                        <p class="action-subtitle">Manage Travel Packages</p>
+                        <p class="action-description">הוסף, ערוך ומחק חבילות טיולים</p>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="bi bi-arrow-left"></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <a asp-controller="AdminBooking" asp-action="Index" class="admin-action-card admin-action-success">
+                    <div class="action-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="action-content">
+                        <h5 class="action-title">ניהול הזמנות</h5>
+                        <p class="action-subtitle">Manage Bookings</p>
+                        <p class="action-description">צפה וניהול כל ההזמנות במערכת</p>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="bi bi-arrow-left"></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <a asp-controller="AdminPayment" asp-action="Index" class="admin-action-card admin-action-info">
+                    <div class="action-icon">
+                        <i class="bi bi-credit-card"></i>
+                    </div>
+                    <div class="action-content">
+                        <h5 class="action-title">ניהול תשלומים</h5>
+                        <p class="action-subtitle">Manage Payments</p>
+                        <p class="action-description">צפה וניהול כל התשלומים</p>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="bi bi-arrow-left"></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <a asp-controller="AdminUser" asp-action="Index" class="admin-action-card admin-action-warning">
+                    <div class="action-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="action-content">
+                        <h5 class="action-title">ניהול משתמשים</h5>
+                        <p class="action-subtitle">Manage Users</p>
+                        <p class="action-description">צפה וניהול כל המשתמשים במערכת</p>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="bi bi-arrow-left"></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <a asp-controller="AdminDiscount" asp-action="Index" class="admin-action-card admin-action-danger">
+                    <div class="action-icon">
+                        <i class="bi bi-tag"></i>
+                    </div>
+                    <div class="action-content">
+                        <h5 class="action-title">ניהול הנחות ומחירים</h5>
+                        <p class="action-subtitle">Manage Discounts & Prices</p>
+                        <p class="action-description">הוסף, ערוך ומחק הנחות ומחירים</p>
+                    </div>
+                    <div class="action-arrow">
+                        <i class="bi bi-arrow-left"></i>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

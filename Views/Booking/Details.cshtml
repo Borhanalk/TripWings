@@ -1,0 +1,45 @@
+@model Booking
+@{
+    ViewData["Title"] = "Booking Details";
+}
+
+<h2>Booking Details</h2>
+
+<dl class="row">
+    <dt class="col-sm-3">Travel Package:</dt>
+    <dd class="col-sm-9">@Model.TravelPackage.Destination, @Model.TravelPackage.Country</dd>
+
+    <dt class="col-sm-3">Rooms:</dt>
+    <dd class="col-sm-9">@Model.RoomsCount</dd>
+
+    <dt class="col-sm-3">Status:</dt>
+    <dd class="col-sm-9">
+        <span class="badge bg-@(Model.Status == BookingStatus.Active ? "success" : Model.Status == BookingStatus.Cancelled ? "danger" : "secondary")">
+            @Model.Status
+        </span>
+    </dd>
+
+    <dt class="col-sm-3">Payment Status:</dt>
+    <dd class="col-sm-9">
+        <span class="badge bg-@(Model.PaymentStatus == PaymentStatus.Paid ? "success" : Model.PaymentStatus == PaymentStatus.Pending ? "warning" : "secondary")">
+            @Model.PaymentStatus
+        </span>
+    </dd>
+
+    <dt class="col-sm-3">Created At:</dt>
+    <dd class="col-sm-9">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+
+    <dt class="col-sm-3">Travel Dates:</dt>
+    <dd class="col-sm-9">@Model.TravelPackage.StartDate.ToString("MMM dd") - @Model.TravelPackage.EndDate.ToString("MMM dd, yyyy")</dd>
+</dl>
+
+<div class="mt-3">
+    <a asp-action="MyBookings" class="btn btn-secondary">Back to My Bookings</a>
+    <a asp-controller="Dashboard" asp-action="DownloadItinerary" asp-route-bookingId="@Model.Id" class="btn btn-primary">Download Itinerary (PDF)</a>
+    @if (Model.Status == BookingStatus.Active)
+    {
+        <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="d-inline">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel Booking</button>
+        </form>
+    }
+</div>

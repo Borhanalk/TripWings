@@ -1,0 +1,200 @@
+@model TravelPackage
+@{
+    ViewData["Title"] = "הוסף לעגלה";
+    var activeDiscount = Model.Discounts.FirstOrDefault(d => 
+        d.StartAt <= DateTime.UtcNow && d.EndAt >= DateTime.UtcNow && 
+        (d.EndAt - d.StartAt).TotalDays <= 7);
+    var existingQuantity = ViewBag.ExistingQuantity as int? ?? 0;
+}
+
+<div class="page-header mb-4">
+    <h1 class="mb-2">
+        <i class="bi bi-cart-plus me-2"></i>הוסף לעגלה
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        @if (Model.PackageImages.Any())
+        {
+            <div id="carouselExample" class="carousel slide mb-4 shadow-sm rounded">
+                <div class="carousel-inner">
+                    @foreach (var image in Model.PackageImages)
+                    {
+                        <div class="carousel-item @(image == Model.PackageImages.First() ? "active" : "")">
+                            <img src="@image.ImageUrl" class="d-block w-100" alt="@Model.Destination" 
+                                 style="height: 400px; object-fit: cover;">
+                        </div>
+                    }
+                </div>
+                @if (Model.PackageImages.Count() > 1)
+                {
+                    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExample" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">הקודם</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#carouselExample" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">הבא</span>
+                    </button>
+                }
+            </div>
+        }
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>תיאור החבילה
+                </h5>
+            </div>
+            <div class="card-body">
+                <h4 class="card-title mb-3">
+                    <i class="bi bi-geo-alt-fill text-primary me-2"></i>@Model.Destination, @Model.Country
+                </h4>
+                <p class="card-text">@Model.Description</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong><i class="bi bi-tag me-1"></i>קטגוריה:</strong>
+                            <span class="badge bg-secondary">@Model.PackageType</span>
+                        </p>
+                        @if (Model.AgeLimit.HasValue)
+                        {
+                            <p class="mb-2">
+                                <strong><i class="bi bi-person me-1"></i>הגבלת גיל:</strong>
+                                מ-@Model.AgeLimit.Value שנים
+                            </p>
+                        }
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2">
+                            <strong><i class="bi bi-calendar-event me-1"></i>תאריכים:</strong><br>
+                            <small>יציאה: @Model.StartDate.ToString("dd/MM/yyyy")</small><br>
+                            <small>חזרה: @Model.EndDate.ToString("dd/MM/yyyy")</small>
+                        </p>
+                        <p class="mb-2">
+                            <strong><i class="bi bi-door-open me-1"></i>חדרים זמינים:</strong>
+                            @Model.RemainingRooms מתוך @Model.AvailableRooms
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cart-plus me-2"></i>הוסף לעגלה
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (existingQuantity > 0)
+                {
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        יש לך כבר <strong>@existingQuantity</strong> פריטים מהחבילה הזו בעגלה.
+                    </div>
+                }
+                
+                <div class="mb-4">
+                    <strong class="d-block mb-2">
+                        <i class="bi bi-currency-dollar me-1"></i>מחיר:
+                    </strong>
+                    @if (activeDiscount != null)
+                    {
+                        <div>
+                            <span class="price-old me-2 fs-5">@activeDiscount.OldPrice.ToString("C")</span>
+                            <span class="price-new fs-4">@activeDiscount.NewPrice.ToString("C")</span>
+                            <span class="badge bg-danger ms-2">
+                                -@activeDiscount.DiscountPercentage.ToString("F0")%
+                            </span>
+                        </div>
+                        <small class="text-muted">מחיר רגיל: @Model.Price.ToString("C")</small>
+                    }
+                    else
+                    {
+                        <div class="fs-3 text-primary fw-bold">@Model.Price.ToString("C")</div>
+                    }
+                </div>
+                
+                <form asp-action="AddToCart" method="post" class="mb-3">
+                    <input type="hidden" name="travelPackageId" value="@Model.Id" />
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">
+                            <i class="bi bi-123 me-1"></i>כמות:
+                        </label>
+                        <div class="input-group">
+                            <button class="btn btn-outline-secondary" type="button" onclick="decreaseQuantity()">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" id="quantity" name="quantity" class="form-control text-center" 
+                                   value="@(existingQuantity > 0 ? existingQuantity + 1 : 1)" min="1" 
+                                   max="@Model.RemainingRooms" required>
+                            <button class="btn btn-outline-secondary" type="button" onclick="increaseQuantity()">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">מקסימום: @Model.RemainingRooms חדרים זמינים</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus me-2"></i>הוסף לעגלה
+                        </button>
+                        <a asp-controller="Trips" asp-action="Details" asp-route-id="@Model.Id" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-right me-2"></i>חזור לפרטים
+                        </a>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <a asp-controller="Payment" asp-action="ProcessPayment" 
+                       asp-route-travelPackageId="@Model.Id" asp-route-roomsCount="1" 
+                       class="btn btn-success">
+                        <i class="bi bi-credit-card me-2"></i>קנה עכשיו
+                    </a>
+                    <a asp-controller="Trips" asp-action="Gallery" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left me-2"></i>המשך לקניות
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function increaseQuantity() {
+            const input = document.getElementById('quantity');
+            const max = parseInt(input.getAttribute('max'));
+            const current = parseInt(input.value);
+            if (current < max) {
+                input.value = current + 1;
+            }
+        }
+        
+        function decreaseQuantity() {
+            const input = document.getElementById('quantity');
+            const current = parseInt(input.value);
+            if (current > 1) {
+                input.value = current - 1;
+            }
+        }
+        
+        // Carousel auto-play
+        @if (Model.PackageImages.Count() > 1)
+        {
+            <text>
+            var carousel = new bootstrap.Carousel(document.querySelector('#carouselExample'), {
+                interval: 3000,
+                wrap: true
+            });
+            </text>
+        }
+    </script>
+}

@@ -1,0 +1,87 @@
+@model IEnumerable<AdminUserViewModel>
+@{
+    ViewData["Title"] = "ניהול משתמשים";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-people me-2"></i>ניהול משתמשים
+    </h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">כל המשתמשים</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>אימייל</th>
+                                <th>שם</th>
+                                <th>תפקיד</th>
+                                <th>מספר הזמנות</th>
+                                <th>מספר תשלומים</th>
+                                <th>סה"כ הוצאות</th>
+                                <th>תאריך הרשמה</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+                                    <td>@user.Email</td>
+                                    <td>@user.FirstName @user.LastName</td>
+                                    <td>
+                                        @if (user.IsAdmin)
+                                        {
+                                            <span class="badge bg-danger">מנהל</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">משתמש</span>
+                                        }
+                                    </td>
+                                    <td>@user.BookingsCount</td>
+                                    <td>@user.PaymentsCount</td>
+                                    <td>@user.TotalSpent.ToString("C")</td>
+                                    <td>@user.CreatedAt.ToString("yyyy-MM-dd")</td>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@user.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye me-1"></i>פרטים
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>אין משתמשים להצגה.
+        </div>
+    }
+</div>

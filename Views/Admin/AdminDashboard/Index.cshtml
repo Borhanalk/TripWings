@@ -1,0 +1,103 @@
+@{
+    ViewData["Title"] = "לוח בקרה למנהל";
+    var totalTrips = ViewBag.TotalTrips as int? ?? 0;
+    var activeTrips = ViewBag.ActiveTrips as int? ?? 0;
+    var totalCartItems = ViewBag.TotalCartItems as int? ?? 0;
+    var totalUsers = ViewBag.TotalUsers as int? ?? 0;
+    var totalBookings = ViewBag.TotalBookings as int? ?? 0;
+    var totalPayments = ViewBag.TotalPayments as int? ?? 0;
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-shield-check me-2"></i>לוח בקרה למנהל
+    </h2>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-dark border-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-airplane me-2"></i>סה"כ טיולים
+                    </h5>
+                    <h2 class="mb-0">@totalTrips</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-check-circle me-2"></i>טיולים פעילים
+                    </h5>
+                    <h2 class="mb-0">@activeTrips</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-dark border-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-cart me-2"></i>פריטי עגלה
+                    </h5>
+                    <h2 class="mb-0">@totalCartItems</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-people me-2"></i>סה"כ משתמשים
+                    </h5>
+                    <h2 class="mb-0">@totalUsers</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card text-white bg-dark border-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-calendar-check me-2"></i>סה"כ הזמנות
+                    </h5>
+                    <h2 class="mb-0">@totalBookings</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-credit-card me-2"></i>סה"כ תשלומים
+                    </h5>
+                    <h2 class="mb-0">@totalPayments</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>פעולות מהירות
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2 d-md-flex">
+                        <a asp-controller="AdminBooking" asp-action="Index" class="btn btn-danger">
+                            <i class="bi bi-calendar-check me-2"></i>ניהול הזמנות
+                        </a>
+                        <a asp-controller="Trips" asp-action="Gallery" class="btn btn-outline-danger">
+                            <i class="bi bi-images me-2"></i>צפה בטיולים
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

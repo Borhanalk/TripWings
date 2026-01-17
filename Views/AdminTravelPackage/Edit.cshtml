@@ -1,0 +1,285 @@
+@model AdminTravelPackageViewModel
+@{
+    ViewData["Title"] = "ערוך חבילת טיול";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-pencil me-2"></i>ערוך חבילת טיול
+    </h2>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form asp-action="Edit" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="Id" />
+
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Destination" class="form-label"></label>
+                                <input asp-for="Destination" class="form-control" />
+                                <span asp-validation-for="Destination" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Country" class="form-label"></label>
+                                <input asp-for="Country" class="form-control" />
+                                <span asp-validation-for="Country" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="StartDate" class="form-label"></label>
+                                <input asp-for="StartDate" type="date" class="form-control" />
+                                <span asp-validation-for="StartDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EndDate" class="form-label"></label>
+                                <input asp-for="EndDate" type="date" class="form-control" />
+                                <span asp-validation-for="EndDate" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Price" class="form-label"></label>
+                                <input asp-for="Price" type="number" step="0.01" class="form-control" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="TotalRooms" class="form-label"></label>
+                                <input asp-for="TotalRooms" type="number" min="1" class="form-control" id="totalRooms" />
+                                <span asp-validation-for="TotalRooms" class="text-danger"></span>
+                                <small class="form-text text-muted">מספר החדרים הכולל / Total number of rooms</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="AvailableRooms" class="form-label"></label>
+                                <input asp-for="AvailableRooms" type="number" min="0" class="form-control" id="availableRooms" />
+                                <span asp-validation-for="AvailableRooms" class="text-danger"></span>
+                                <small class="form-text text-muted">מספר החדרים הזמינים (0 עד מספר החדרים הכולל) / Available rooms (0 to total rooms)</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="PackageType" class="form-label"></label>
+                                <input asp-for="PackageType" class="form-control" />
+                                <span asp-validation-for="PackageType" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="AgeLimit" class="form-label"></label>
+                                <input asp-for="AgeLimit" type="number" min="0" max="120" class="form-control" />
+                                <span asp-validation-for="AgeLimit" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label"></label>
+                            <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ImageUrls" class="form-label"></label>
+                            @if (Model.ImageUrlList.Any())
+                            {
+                                <div class="mb-2">
+                                    <strong>תמונות נוכחיות:</strong>
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        @foreach (var imgUrl in Model.ImageUrlList)
+                                        {
+                                            <img src="@imgUrl" alt="תמונה" class="img-thumbnail" style="width: 100px; height: 75px; object-fit: cover;" />
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            <textarea asp-for="ImageUrls" class="form-control" rows="5" 
+                                      placeholder="הכנס כתובות תמונות חדשות (URL), מופרדות בפסיק או שורה חדשה"></textarea>
+                            <span asp-validation-for="ImageUrls" class="text-danger"></span>
+                            <small class="text-muted">הכנס תמונות חדשות כדי להחליף את התמונות הקיימות.</small>
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="IsVisible" type="checkbox" class="form-check-input" />
+                            <label asp-for="IsVisible" class="form-check-label"></label>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="AddDiscount" type="checkbox" class="form-check-input" id="addDiscount" />
+                            <label asp-for="AddDiscount" class="form-check-label">
+                                <strong>Add Discount to this Package</strong>
+                            </label>
+                        </div>
+
+                        <div id="discountSection" style="display: none;">
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">
+                                        <i class="bi bi-tag me-2"></i>Discount Information
+                                    </h5>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="DiscountOldPrice" class="form-label">Old Price (Before Discount) *</label>
+                                            <input asp-for="DiscountOldPrice" class="form-control" type="number" step="0.01" min="0.01" id="discountOldPrice" />
+                                            <span asp-validation-for="DiscountOldPrice" class="text-danger"></span>
+                                            <small class="form-text text-muted">The original price before discount</small>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="DiscountNewPrice" class="form-label">New Price (After Discount) *</label>
+                                            <input asp-for="DiscountNewPrice" class="form-control" type="number" step="0.01" min="0.01" id="discountNewPrice" />
+                                            <span asp-validation-for="DiscountNewPrice" class="text-danger"></span>
+                                            <small class="form-text text-muted">The discounted price (must be less than old price)</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="DiscountStartAt" class="form-label">Discount Start Date *</label>
+                                            <input asp-for="DiscountStartAt" class="form-control" type="datetime-local" id="discountStartAt" />
+                                            <span asp-validation-for="DiscountStartAt" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="DiscountEndAt" class="form-label">Discount End Date *</label>
+                                            <input asp-for="DiscountEndAt" class="form-control" type="datetime-local" id="discountEndAt" />
+                                            <span asp-validation-for="DiscountEndAt" class="text-danger"></span>
+                                            <small class="form-text text-muted">Maximum 7 days from start date</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-info mb-0">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Note:</strong> Discount duration cannot exceed 7 days. The system will automatically validate this.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-check-circle me-2"></i>עדכן
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>ביטול
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalRoomsInput = document.getElementById('totalRooms');
+            const availableRoomsInput = document.getElementById('availableRooms');
+            const addDiscountCheckbox = document.getElementById('addDiscount');
+            const discountSection = document.getElementById('discountSection');
+            const priceInput = document.querySelector('input[name="Price"]');
+            const discountOldPriceInput = document.getElementById('discountOldPrice');
+            const discountNewPriceInput = document.getElementById('discountNewPrice');
+            const discountStartAtInput = document.getElementById('discountStartAt');
+            const discountEndAtInput = document.getElementById('discountEndAt');
+            
+            if (totalRoomsInput && availableRoomsInput) {
+                totalRoomsInput.addEventListener('input', function() {
+                    const totalRooms = parseInt(this.value) || 0;
+                    availableRoomsInput.setAttribute('max', totalRooms);
+                    if (parseInt(availableRoomsInput.value) > totalRooms) {
+                        availableRoomsInput.value = totalRooms;
+                    }
+                });
+                
+                availableRoomsInput.addEventListener('input', function() {
+                    const totalRooms = parseInt(totalRoomsInput.value) || 0;
+                    const availableRooms = parseInt(this.value) || 0;
+                    if (availableRooms > totalRooms) {
+                        this.setCustomValidity('מספר החדרים הזמינים לא יכול להיות גדול ממספר החדרים הכולל');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+
+            if (addDiscountCheckbox && discountSection) {
+                if (addDiscountCheckbox.checked) {
+                    discountSection.style.display = 'block';
+                }
+                
+                addDiscountCheckbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        discountSection.style.display = 'block';
+                        if (priceInput && discountOldPriceInput && !discountOldPriceInput.value) {
+                            discountOldPriceInput.value = priceInput.value;
+                        }
+                    } else {
+                        discountSection.style.display = 'none';
+                    }
+                });
+            }
+
+            if (priceInput && discountOldPriceInput) {
+                priceInput.addEventListener('input', function() {
+                    if (!discountOldPriceInput.value && addDiscountCheckbox && addDiscountCheckbox.checked) {
+                        discountOldPriceInput.value = this.value;
+                    }
+                });
+            }
+
+            if (discountStartAtInput && discountEndAtInput) {
+                discountStartAtInput.addEventListener('change', function() {
+                    const startDate = new Date(this.value);
+                    const maxEndDate = new Date(startDate);
+                    maxEndDate.setDate(maxEndDate.getDate() + 7);
+                    
+                    discountEndAtInput.min = this.value;
+                    discountEndAtInput.max = maxEndDate.toISOString().slice(0, 16);
+                    
+                    if (new Date(discountEndAtInput.value) > maxEndDate) {
+                        discountEndAtInput.value = maxEndDate.toISOString().slice(0, 16);
+                    }
+                });
+            }
+
+            if (discountOldPriceInput && discountNewPriceInput) {
+                discountOldPriceInput.addEventListener('input', function() {
+                    const oldPrice = parseFloat(this.value);
+                    const newPrice = parseFloat(discountNewPriceInput.value);
+                    if (!isNaN(oldPrice) && !isNaN(newPrice) && newPrice >= oldPrice) {
+                        discountNewPriceInput.setCustomValidity('New price must be less than old price');
+                    } else {
+                        discountNewPriceInput.setCustomValidity('');
+                    }
+                });
+
+                discountNewPriceInput.addEventListener('input', function() {
+                    const oldPrice = parseFloat(discountOldPriceInput.value);
+                    const newPrice = parseFloat(this.value);
+                    if (!isNaN(oldPrice) && !isNaN(newPrice) && newPrice >= oldPrice) {
+                        this.setCustomValidity('New price must be less than old price');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+        });
+    </script>
+}

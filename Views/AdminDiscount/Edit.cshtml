@@ -1,0 +1,150 @@
+@model TripWings.Models.ViewModels.AdminDiscountViewModel
+@{
+    ViewData["Title"] = "Edit Discount";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-pencil me-2"></i>Edit Discount
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="TravelPackageId" class="form-label">Travel Package *</label>
+                            <select asp-for="TravelPackageId" class="form-select" required>
+                                <option value="">-- Select Travel Package --</option>
+                                @if (ViewBag.TravelPackages != null)
+                                {
+                                    @foreach (var package in ViewBag.TravelPackages as List<TripWings.Models.TravelPackage> ?? new List<TripWings.Models.TravelPackage>())
+                                    {
+                                        <option value="@package.Id" selected="@(package.Id == Model.TravelPackageId)">
+                                            @package.Destination, @package.Country - @package.Price.ToString("C")
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="TravelPackageId" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="OldPrice" class="form-label">Old Price *</label>
+                            <input asp-for="OldPrice" class="form-control" type="number" step="0.01" min="0.01" required />
+                            <span asp-validation-for="OldPrice" class="text-danger"></span>
+                            <small class="form-text text-muted">The original price before discount</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="NewPrice" class="form-label">New Price *</label>
+                            <input asp-for="NewPrice" class="form-control" type="number" step="0.01" min="0.01" required />
+                            <span asp-validation-for="NewPrice" class="text-danger"></span>
+                            <small class="form-text text-muted">The discounted price (must be less than old price)</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="StartAt" class="form-label">Start Date *</label>
+                                <input asp-for="StartAt" class="form-control" type="datetime-local" required />
+                                <span asp-validation-for="StartAt" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="EndAt" class="form-label">End Date *</label>
+                                <input asp-for="EndAt" class="form-control" type="datetime-local" required />
+                                <span asp-validation-for="EndAt" class="text-danger"></span>
+                                <small class="form-text text-muted">Maximum 7 days from start date</small>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> Discount duration cannot exceed 7 days. The system will automatically validate this.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-check-circle me-1"></i>Update Discount
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Back to List
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startAtInput = document.querySelector('input[name="StartAt"]');
+            const endAtInput = document.querySelector('input[name="EndAt"]');
+            const oldPriceInput = document.querySelector('input[name="OldPrice"]');
+            const newPriceInput = document.querySelector('input[name="NewPrice"]');
+            const travelPackageSelect = document.querySelector('select[name="TravelPackageId"]');
+
+            if (travelPackageSelect && oldPriceInput) {
+                travelPackageSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption.value) {
+                        const priceText = selectedOption.text.split(' - ')[1];
+                        if (priceText) {
+                            const price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+                            if (!isNaN(price)) {
+                                oldPriceInput.value = price.toFixed(2);
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (startAtInput && endAtInput) {
+                startAtInput.addEventListener('change', function() {
+                    const startDate = new Date(this.value);
+                    const maxEndDate = new Date(startDate);
+                    maxEndDate.setDate(maxEndDate.getDate() + 7);
+                    
+                    endAtInput.min = this.value;
+                    endAtInput.max = maxEndDate.toISOString().slice(0, 16);
+                    
+                    if (new Date(endAtInput.value) > maxEndDate) {
+                        endAtInput.value = maxEndDate.toISOString().slice(0, 16);
+                    }
+                });
+            }
+
+            if (oldPriceInput && newPriceInput) {
+                oldPriceInput.addEventListener('input', function() {
+                    const oldPrice = parseFloat(this.value);
+                    const newPrice = parseFloat(newPriceInput.value);
+                    if (!isNaN(oldPrice) && !isNaN(newPrice) && newPrice >= oldPrice) {
+                        newPriceInput.setCustomValidity('New price must be less than old price');
+                    } else {
+                        newPriceInput.setCustomValidity('');
+                    }
+                });
+
+                newPriceInput.addEventListener('input', function() {
+                    const oldPrice = parseFloat(oldPriceInput.value);
+                    const newPrice = parseFloat(this.value);
+                    if (!isNaN(oldPrice) && !isNaN(newPrice) && newPrice >= oldPrice) {
+                        this.setCustomValidity('New price must be less than old price');
+                    } else {
+                        this.setCustomValidity('');
+                    }
+                });
+            }
+        });
+    </script>
+}

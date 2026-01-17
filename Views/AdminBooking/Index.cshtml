@@ -1,0 +1,95 @@
+@model IEnumerable<Booking>
+@{
+    ViewData["Title"] = "ניהול הזמנות";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-calendar-check me-2"></i>ניהול הזמנות
+    </h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">כל ההזמנות</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>מזהה</th>
+                                <th>משתמש</th>
+                                <th>יעד</th>
+                                <th>מדינה</th>
+                                <th>מספר חדרים</th>
+                                <th>סטטוס</th>
+                                <th>סטטוס תשלום</th>
+                                <th>תאריך יצירה</th>
+                                <th>פעולות</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var booking in Model)
+                            {
+                                <tr>
+                                    <td>@booking.Id</td>
+                                    <td>@(booking.User?.Email ?? "N/A")</td>
+                                    <td>@booking.TravelPackage.Destination</td>
+                                    <td>@booking.TravelPackage.Country</td>
+                                    <td>@booking.RoomsCount</td>
+                                    <td>
+                                        <span class="badge bg-@(booking.Status == BookingStatus.Active ? "success" : booking.Status == BookingStatus.Cancelled ? "danger" : "secondary")">
+                                            @(booking.Status == BookingStatus.Active ? "פעיל" : booking.Status == BookingStatus.Cancelled ? "בוטל" : "הושלם")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-@(booking.PaymentStatus == PaymentStatus.Paid ? "success" : booking.PaymentStatus == PaymentStatus.Pending ? "warning" : "secondary")">
+                                            @(booking.PaymentStatus == PaymentStatus.Paid ? "שולם" : booking.PaymentStatus == PaymentStatus.Pending ? "ממתין" : booking.PaymentStatus == PaymentStatus.Refunded ? "הוחזר" : "נכשל")
+                                        </span>
+                                    </td>
+                                    <td>@booking.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td>
+                                        @if (booking.Status == BookingStatus.Active)
+                                        {
+                                            <form asp-action="CancelBooking" asp-controller="AdminBooking" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@booking.Id" />
+                                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('האם אתה בטוח שברצונך לבטל את ההזמנה?');">
+                                                    <i class="bi bi-x-circle me-1"></i>בטל הזמנה
+                                                </button>
+                                            </form>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>אין הזמנות להצגה.
+        </div>
+    }
+</div>

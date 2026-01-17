@@ -1,0 +1,124 @@
+@model Payment
+@{
+    ViewData["Title"] = "פרטי תשלום";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-credit-card me-2"></i>פרטי תשלום #@Model.Id
+    </h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">פרטי התשלום</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">מזהה תשלום:</dt>
+                        <dd class="col-sm-8">@Model.Id</dd>
+
+                        <dt class="col-sm-4">משתמש:</dt>
+                        <dd class="col-sm-8">@(Model.User?.Email ?? "N/A")</dd>
+
+                        <dt class="col-sm-4">מספר הזמנה:</dt>
+                        <dd class="col-sm-8">#@Model.BookingId</dd>
+
+                        <dt class="col-sm-4">יעד:</dt>
+                        <dd class="col-sm-8">@(Model.Booking?.TravelPackage?.Destination ?? "N/A")</dd>
+
+                        <dt class="col-sm-4">סכום מקורי:</dt>
+                        <dd class="col-sm-8">@Model.Amount.ToString("C")</dd>
+
+                        @if (Model.DiscountAmount > 0)
+                        {
+                            <dt class="col-sm-4">הנחה:</dt>
+                            <dd class="col-sm-8">@Model.DiscountAmount.ToString("C")</dd>
+                        }
+
+                        <dt class="col-sm-4">סכום סופי:</dt>
+                        <dd class="col-sm-8"><strong>@Model.FinalAmount.ToString("C")</strong></dd>
+
+                        <dt class="col-sm-4">שיטת תשלום:</dt>
+                        <dd class="col-sm-8">
+                            @(Model.PaymentMethod == PaymentMethod.CreditCard ? "כרטיס אשראי" :
+                              Model.PaymentMethod == PaymentMethod.DebitCard ? "כרטיס חיוב" :
+                              Model.PaymentMethod == PaymentMethod.BankTransfer ? "העברה בנקאית" : "מזומן")
+                        </dd>
+
+                        <dt class="col-sm-4">סטטוס:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-@(Model.Status == PaymentStatus.Paid ? "success" : Model.Status == PaymentStatus.Pending ? "warning" : Model.Status == PaymentStatus.Refunded ? "info" : "danger")">
+                                @(Model.Status == PaymentStatus.Paid ? "שולם" : Model.Status == PaymentStatus.Pending ? "ממתין" : Model.Status == PaymentStatus.Refunded ? "הוחזר" : "נכשל")
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">תאריך תשלום:</dt>
+                        <dd class="col-sm-8">@Model.PaymentDate.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                        @if (Model.InstallmentsCount > 1)
+                        {
+                            <dt class="col-sm-4">מספר תשלומים:</dt>
+                            <dd class="col-sm-8">@Model.InstallmentsCount</dd>
+
+                            <dt class="col-sm-4">סכום לכל תשלום:</dt>
+                            <dd class="col-sm-8">@Model.InstallmentAmount.ToString("C")</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.LastFourDigits))
+                        {
+                            <dt class="col-sm-4">4 ספרות אחרונות:</dt>
+                            <dd class="col-sm-8">****@Model.LastFourDigits</dd>
+                        }
+
+                        @if (!string.IsNullOrEmpty(Model.TransactionId))
+                        {
+                            <dt class="col-sm-4">מזהה עסקה:</dt>
+                            <dd class="col-sm-8">@Model.TransactionId</dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">פעולות</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Status == PaymentStatus.Paid)
+                    {
+                        <form asp-action="Refund" method="post" class="mb-2">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-warning w-100" onclick="return confirm('האם אתה בטוח שברצונך להחזיר את התשלום?');">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i>החזר תשלום
+                            </button>
+                        </form>
+                    }
+                    <a asp-action="Index" class="btn btn-secondary w-100">
+                        <i class="bi bi-arrow-right me-2"></i>חזור לרשימה
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

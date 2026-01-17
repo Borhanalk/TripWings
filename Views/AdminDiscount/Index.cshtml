@@ -1,0 +1,125 @@
+@model IEnumerable<TripWings.Models.Discount>
+@{
+    ViewData["Title"] = "Manage Discounts";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-tag me-2"></i>Manage Discounts
+        </h2>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Create New Discount
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Travel Package</th>
+                                <th>Old Price</th>
+                                <th>New Price</th>
+                                <th>Discount %</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var discount in Model)
+                            {
+                                var isActive = discount.IsActive;
+                                var duration = (discount.EndAt - discount.StartAt).TotalDays;
+                                <tr>
+                                    <td>
+                                        <strong>@discount.TravelPackage.Destination</strong>
+                                        <br>
+                                        <small class="text-muted">@discount.TravelPackage.Country</small>
+                                    </td>
+                                    <td>
+                                        <span class="text-decoration-line-through text-muted">
+                                            @discount.OldPrice.ToString("C")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">
+                                            @discount.NewPrice.ToString("C")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            -@discount.DiscountPercentage.ToString("F0")%
+                                        </span>
+                                    </td>
+                                    <td>@discount.StartAt.ToString("MM/dd/yyyy HH:mm")</td>
+                                    <td>@discount.EndAt.ToString("MM/dd/yyyy HH:mm")</td>
+                                    <td>@duration.ToString("F0") days</td>
+                                    <td>
+                                        @if (isActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else if (discount.EndAt < DateTime.UtcNow)
+                                        {
+                                            <span class="badge bg-secondary">Expired</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning">Upcoming</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            <a asp-action="Edit" asp-route-id="@discount.Id" class="btn btn-sm btn-warning">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@discount.Id" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <h4 class="mt-3">No Discounts Found</h4>
+                <p class="text-muted">Create your first discount to get started</p>
+                <a asp-action="Create" class="btn btn-primary mt-3">
+                    <i class="bi bi-plus-circle me-1"></i>Create New Discount
+                </a>
+            </div>
+        </div>
+    }
+</div>

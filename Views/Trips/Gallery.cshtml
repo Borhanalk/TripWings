@@ -1,0 +1,258 @@
+@model TripGalleryViewModel
+@{
+    ViewData["Title"] = "גלריית טיולים";
+}
+
+<div class="page-header text-center mb-4">
+    <h1 class="display-5 mb-2">
+        <i class="bi bi-images me-2"></i>גלריית טיולים
+    </h1>
+    <p class="lead mb-0">גלה את הטיול המושלם עבורך</p>
+</div>
+
+
+<div class="filter-container mb-5">
+    <div class="filter-header">
+        <h3 class="filter-title">
+            <i class="bi bi-funnel-fill me-2"></i>סינון וחיפוש / Filter & Search
+        </h3>
+        <p class="filter-subtitle">מצא את הטיול המושלם עבורך / Find your perfect trip</p>
+    </div>
+    <div class="filter-body">
+        <form method="get" asp-action="Gallery" class="filter-form">
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-search me-2"></i>חיפוש / Search
+                        </label>
+                        <input type="text" name="searchQuery" class="filter-input" value="@Model.SearchQuery" 
+                               placeholder="חפש יעדים, מדינות... / Search destinations, countries...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-geo-alt me-2"></i>יעד / Destination
+                        </label>
+                        <select name="destination" class="filter-select">
+                            <option value="">הכל / All</option>
+                            @foreach (var dest in Model.Destinations)
+                            {
+                                <option value="@dest" selected="@(Model.Destination == dest)">@dest</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-flag me-2"></i>מדינה / Country
+                        </label>
+                        <select name="country" class="filter-select">
+                            <option value="">הכל / All</option>
+                            @foreach (var cntry in Model.Countries)
+                            {
+                                <option value="@cntry" selected="@(Model.Country == cntry)">@cntry</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-tag me-2"></i>קטגוריה / Category
+                        </label>
+                        <select name="category" class="filter-select">
+                            <option value="">הכל / All</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <option value="@cat" selected="@(Model.Category == cat)">@cat</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-calendar-range me-2"></i>תאריך נסיעה / Travel Date
+                        </label>
+                        <div class="date-range-input">
+                            <input type="date" name="travelDateFrom" class="filter-input date-input" 
+                                   value="@Model.TravelDateFrom?.ToString("yyyy-MM-dd")">
+                            <span class="date-separator">-</span>
+                            <input type="date" name="travelDateTo" class="filter-input date-input" 
+                                   value="@Model.TravelDateTo?.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-sort-alpha-down me-2"></i>מיון / Sort By
+                        </label>
+                        <select name="sortBy" class="filter-select">
+                            <option value="date" selected="@(Model.SortBy == "date")">תאריך / Date</option>
+                            <option value="price" selected="@(Model.SortBy == "price")">מחיר / Price</option>
+                            <option value="popular" selected="@(Model.SortBy == "popular")">פופולרי / Popular</option>
+                            <option value="category" selected="@(Model.SortBy == "category")">קטגוריה / Category</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-arrow-up-down me-2"></i>סדר / Order
+                        </label>
+                        <select name="sortOrder" class="filter-select">
+                            <option value="asc" selected="@(Model.SortOrder == "asc")">עולה / Ascending</option>
+                            <option value="desc" selected="@(Model.SortOrder == "desc")">יורד / Descending</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="filter-actions">
+                        <button type="submit" class="btn-filter-search">
+                            <i class="bi bi-search me-2"></i>חפש / Search
+                        </button>
+                        <a asp-action="Gallery" class="btn-filter-reset">
+                            <i class="bi bi-arrow-clockwise me-2"></i>איפוס / Reset
+                        </a>
+                        <a asp-controller="Trips" asp-action="Discounts" class="btn-filter-discount">
+                            <i class="bi bi-percent me-2"></i>הנחות / Discounts
+                        </a>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="AdminDiscount" asp-action="Index" class="btn-filter-discount-admin">
+                                <i class="bi bi-gear me-2"></i>ניהול הנחות / Manage Discounts
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+@if (Model.Trips.Any())
+{
+    <div class="trips-grid">
+        <div class="row g-4">
+            @foreach (var trip in Model.Trips)
+            {
+                <div class="col-md-4 col-lg-3">
+                    <div class="trip-card-modern">
+                        @if (trip.HasActiveDiscount)
+                        {
+                            <div class="trip-discount-badge">
+                                <i class="bi bi-tag-fill me-1"></i>מבצע! / Sale!
+                            </div>
+                        }
+                        <div class="trip-image-container">
+                            @if (trip.ImageUrls.Any())
+                            {
+                                <img src="@trip.ImageUrls.First()" class="trip-image" alt="@trip.Destination">
+                            }
+                            else
+                            {
+                                <div class="trip-image-placeholder">
+                                    <i class="bi bi-image" style="font-size: 3rem;"></i>
+                                </div>
+                            }
+                            <div class="trip-overlay">
+                                <div class="trip-badges">
+                                    <span class="trip-badge-category">
+                                        <i class="bi bi-tag me-1"></i>@trip.PackageType
+                                    </span>
+                                    @if (trip.AgeLimit.HasValue)
+                                    {
+                                        <span class="trip-badge-age">
+                                            <i class="bi bi-person me-1"></i>מ-@trip.AgeLimit.Value שנים
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="trip-content">
+                            <div class="trip-header">
+                                <h5 class="trip-title">
+                                    <i class="bi bi-geo-alt-fill me-2"></i>@trip.Destination
+                                </h5>
+                                <p class="trip-country">
+                                    <i class="bi bi-flag me-1"></i>@trip.Country
+                                </p>
+                            </div>
+                            <div class="trip-details">
+                                <div class="trip-detail-item">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span>@trip.StartDate.ToString("dd/MM/yyyy") - @trip.EndDate.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="trip-detail-item">
+                                    <i class="bi bi-door-open"></i>
+                                    <span>חדרים זמינים: @trip.RemainingRooms מתוך @trip.AvailableRooms</span>
+                                </div>
+                            </div>
+                            <div class="trip-price-section">
+                                @if (trip.HasActiveDiscount && trip.OldPrice.HasValue && trip.NewPrice.HasValue)
+                                {
+                                    <div class="price-container">
+                                        <span class="price-old">@trip.OldPrice.Value.ToString("C")</span>
+                                        <span class="price-new">@trip.NewPrice.Value.ToString("C")</span>
+                                        @if (trip.DiscountPercentage.HasValue)
+                                        {
+                                            <span class="discount-percentage">
+                                                -@trip.DiscountPercentage.Value.ToString("F0")%
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="price-container">
+                                        <span class="price-regular">@trip.Price.ToString("C")</span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="trip-actions">
+                                <a asp-controller="Trips" asp-action="Details" asp-route-id="@trip.Id" 
+                                   class="btn-trip-details">
+                                    <i class="bi bi-eye me-1"></i>פרטים / Details
+                                </a>
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <a asp-controller="Cart" asp-action="AddToCart" asp-route-travelPackageId="@trip.Id" 
+                                       class="btn-trip-cart">
+                                        <i class="bi bi-cart-plus me-1"></i>הוספה לעגלה / Add to Cart
+                                    </a>
+                                    <a asp-controller="Payment" asp-action="ProcessPayment" 
+                                       asp-route-travelPackageId="@trip.Id" asp-route-roomsCount="1" 
+                                       class="btn-trip-buy">
+                                        <i class="bi bi-credit-card me-1"></i>קנה עכשיו / Buy Now
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Account" asp-action="Login" class="btn-trip-login">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>התחבר להזמנה / Login to Book
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="empty-state-modern">
+        <div class="empty-icon">
+            <i class="bi bi-inbox"></i>
+        </div>
+        <h3 class="empty-title">לא נמצאו תוצאות / No Results Found</h3>
+        <p class="empty-message">נסה לשנות את פרמטרי החיפוש / Try changing your search parameters</p>
+    </div>
+}
+

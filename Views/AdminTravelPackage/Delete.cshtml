@@ -1,0 +1,76 @@
+@model TravelPackage
+@{
+    ViewData["Title"] = "מחק חבילת טיול";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-trash me-2"></i>מחק חבילת טיול
+    </h2>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong>אזהרה!</strong> האם אתה בטוח שברצונך למחוק את החבילה הזו? פעולה זו לא ניתנת לביטול.
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">מזהה:</dt>
+                <dd class="col-sm-9">@Model.Id</dd>
+
+                <dt class="col-sm-3">יעד:</dt>
+                <dd class="col-sm-9">@Model.Destination</dd>
+
+                <dt class="col-sm-3">מדינה:</dt>
+                <dd class="col-sm-9">@Model.Country</dd>
+
+                <dt class="col-sm-3">תאריכים:</dt>
+                <dd class="col-sm-9">@Model.StartDate.ToString("dd/MM/yyyy") - @Model.EndDate.ToString("dd/MM/yyyy")</dd>
+
+                <dt class="col-sm-3">מחיר:</dt>
+                <dd class="col-sm-9">@Model.Price.ToString("C")</dd>
+
+                <dt class="col-sm-3">מספר חדרים:</dt>
+                <dt class="col-sm-3">מספר חדרים כולל / Total Rooms:</dt>
+                <dd class="col-sm-9">@Model.TotalRooms</dd>
+                <dt class="col-sm-3">חדרים זמינים / Available Rooms:</dt>
+                <dd class="col-sm-9">@Model.AvailableRooms</dd>
+
+                <dt class="col-sm-3">סוג:</dt>
+                <dd class="col-sm-9">@Model.PackageType</dd>
+
+                <dt class="col-sm-3">תמונות:</dt>
+                <dd class="col-sm-9">
+                    @if (Model.PackageImages.Any())
+                    {
+                        <div class="d-flex flex-wrap gap-2">
+                            @foreach (var img in Model.PackageImages)
+                            {
+                                <img src="@img.ImageUrl" alt="@Model.Destination" class="img-thumbnail" style="width: 100px; height: 75px; object-fit: cover;" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">אין תמונות</span>
+                    }
+                </dd>
+            </dl>
+
+            <form asp-action="Delete" method="post" class="mt-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-2"></i>מחק
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>ביטול
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

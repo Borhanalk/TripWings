@@ -1,0 +1,130 @@
+@model IEnumerable<TripWings.Models.ViewModels.WaitingListViewModel>
+@{
+    ViewData["Title"] = "רשימת המתנה שלי / My Waiting List";
+}
+
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>רשימת המתנה שלי / My Waiting List
+        </h2>
+        <a asp-controller="Trips" asp-action="Gallery" class="btn btn-primary">
+            <i class="bi bi-search me-1"></i>עיין בטיולים / Browse Trips
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>יעד / Destination</th>
+                                <th>מדינה / Country</th>
+                                <th>מיקום / Position</th>
+                                <th>סה"כ ממתינים / Total Waiting</th>
+                                <th>זמן משוער / Estimated Wait</th>
+                                <th>תאריך הצטרפות / Joined At</th>
+                                <th>סטטוס / Status</th>
+                                <th>פעולות / Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td><strong>@item.Destination</strong></td>
+                                    <td>@item.Country</td>
+                                    <td>
+                                        <span class="badge bg-primary fs-6">#@item.Position</span>
+                                    </td>
+                                    <td>@item.TotalWaiting</td>
+                                    <td>
+                                        @if (item.EstimatedWaitTime.HasValue)
+                                        {
+                                            <text>~@item.EstimatedWaitTime.Value.Days ימים / days</text>
+                                        }
+                                        else
+                                        {
+                                            <text>לא זמין / N/A</text>
+                                        }
+                                    </td>
+                                    <td>@item.JoinedAt.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (item.NotifiedAt.HasValue)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-bell-fill me-1"></i>הוזהר / Notified
+                                            </span>
+                                        }
+                                        else if (item.Position == 1)
+                                        {
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-star-fill me-1"></i>תורך! / Your Turn!
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-hourglass-split me-1"></i>ממתין / Waiting
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            @if (item.Position == 1 || item.NotifiedAt.HasValue)
+                                            {
+                                                <a asp-action="Create" asp-route-travelPackageId="@item.TravelPackageId" 
+                                                   class="btn btn-sm btn-success">
+                                                    <i class="bi bi-calendar-check me-1"></i>احجز الآن / Book Now
+                                                </a>
+                                            }
+                                            <form asp-action="RemoveFromWaitingList" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-danger" 
+                                                        onclick="return confirm('هل أنت متأكد من إزالتك من قائمة الانتظار؟ / Are you sure you want to remove yourself from the waiting list?');">
+                                                    <i class="bi bi-trash me-1"></i>حذف / Remove
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                <h4 class="mt-3">אין לך רשימות המתנה / You are not on any waiting lists</h4>
+                <p class="text-muted">עיין בטיולים הזמינים והצטרף לרשימת המתנה אם תרצה / Browse available trips and join a waiting list if you'd like</p>
+                <a asp-controller="Trips" asp-action="Gallery" class="btn btn-primary mt-3">
+                    <i class="bi bi-search me-1"></i>עיין בטיולים / Browse Trips
+                </a>
+            </div>
+        </div>
+    }
+</div>

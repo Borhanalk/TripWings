@@ -1,0 +1,91 @@
+@model TripWings.Models.Discount
+@{
+    ViewData["Title"] = "Delete Discount";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Delete Discount
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Are you sure you want to delete this discount?</strong>
+                    </div>
+
+                    <dl class="row">
+                        <dt class="col-sm-4">Travel Package:</dt>
+                        <dd class="col-sm-8">
+                            <strong>@Model.TravelPackage.Destination</strong>
+                            <br>
+                            <small class="text-muted">@Model.TravelPackage.Country</small>
+                        </dd>
+
+                        <dt class="col-sm-4">Old Price:</dt>
+                        <dd class="col-sm-8">
+                            <span class="text-decoration-line-through text-muted">
+                                @Model.OldPrice.ToString("C")
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">New Price:</dt>
+                        <dd class="col-sm-8">
+                            <span class="fw-bold text-success">
+                                @Model.NewPrice.ToString("C")
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Discount:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-danger">
+                                -@Model.DiscountPercentage.ToString("F0")%
+                            </span>
+                        </dd>
+
+                        <dt class="col-sm-4">Start Date:</dt>
+                        <dd class="col-sm-8">@Model.StartAt.ToString("MM/dd/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4">End Date:</dt>
+                        <dd class="col-sm-8">@Model.EndAt.ToString("MM/dd/yyyy HH:mm")</dd>
+
+                        <dt class="col-sm-4">Duration:</dt>
+                        <dd class="col-sm-8">@((Model.EndAt - Model.StartAt).TotalDays.ToString("F0")) days</dd>
+
+                        <dt class="col-sm-4">Status:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else if (Model.EndAt < DateTime.UtcNow)
+                            {
+                                <span class="badge bg-secondary">Expired</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">Upcoming</span>
+                            }
+                        </dd>
+                    </dl>
+
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Delete
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

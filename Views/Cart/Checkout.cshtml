@@ -1,0 +1,71 @@
+@model CheckoutViewModel
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+<h2>Checkout</h2>
+
+<div class="row">
+    <div class="col-md-8">
+        <h4>Order Summary</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Trip</th>
+                    <th>Destination</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.CartItems)
+                {
+                    var now = DateTime.UtcNow;
+                    var activeDiscount = item.TravelPackage.Discounts
+                        .FirstOrDefault(d => d.StartAt <= now && d.EndAt >= now && (d.EndAt - d.StartAt).TotalDays <= 7);
+                    var price = activeDiscount?.NewPrice ?? item.TravelPackage.Price;
+                    var subtotal = price * item.Quantity;
+                    <tr>
+                        <td>@item.TravelPackage.Destination</td>
+                        <td>@item.TravelPackage.Country</td>
+                        <td>@item.Quantity</td>
+                        <td>
+                            @if (activeDiscount != null)
+                            {
+                                <span class="text-decoration-line-through text-muted">@activeDiscount.OldPrice.ToString("C")</span>
+                                <span class="text-danger fw-bold">@price.ToString("C")</span>
+                            }
+                            else
+                            {
+                                <span>@price.ToString("C")</span>
+                            }
+                        </td>
+                        <td>@subtotal.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="4">Total:</th>
+                    <th>@Model.TotalAmount.ToString("C")</th>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Total Amount</h5>
+                <h3 class="text-primary">@Model.TotalAmount.ToString("C")</h3>
+                <form asp-controller="Payment" asp-action="ProcessPayment" method="get">
+                    @foreach (var item in Model.CartItems)
+                    {
+                        <input type="hidden" name="cartItemIds" value="@item.Id" />
+                    }
+                    <button type="submit" class="btn btn-success btn-lg w-100 mt-3">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

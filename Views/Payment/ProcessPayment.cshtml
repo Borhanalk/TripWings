@@ -1,0 +1,444 @@
+@model PaymentViewModel
+@{
+    ViewData["Title"] = "תשלום";
+    var totalAmount = ViewBag.TotalAmount as decimal? ?? 0;
+    var paymentType = ViewBag.PaymentType as string ?? "cart";
+}
+
+<div class="page-header mb-4">
+    <h1 class="mb-2">
+        <i class="bi bi-credit-card me-2"></i>תשלום
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>סיכום הזמנה
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-0">
+                    <h5 class="mb-0">
+                        <i class="bi bi-currency-dollar me-2"></i>סה"כ לתשלום: 
+                        <strong class="fs-3">@totalAmount.ToString("C")</strong>
+                    </h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-credit-card me-2"></i>פרטי תשלום
+                </h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="ProcessPayment" method="post" id="paymentForm">
+                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+
+                    @if (Model.TravelPackageId.HasValue)
+                    {
+                        <input type="hidden" asp-for="TravelPackageId" />
+                        <input type="hidden" asp-for="RoomsCount" />
+                    }
+                    else if (Model.CartItemIds != null)
+                    {
+                        @foreach (var id in Model.CartItemIds)
+                        {
+                            <input type="hidden" name="CartItemIds" value="@id" />
+                        }
+                    }
+
+                    
+                    <div class="mb-4">
+                        <label asp-for="PaymentMethod" class="form-label fw-bold">
+                            <i class="bi bi-wallet2 me-1"></i>בחר אמצעי תשלום
+                        </label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="form-check payment-method-card h-100">
+                                    <input class="form-check-input" type="radio" name="PaymentMethod" 
+                                           id="paymentCreditCard" value="CreditCard" 
+                                           @(Model.PaymentMethod == "CreditCard" ? "checked" : "") 
+                                           onchange="toggleCardFields()">
+                                    <label class="form-check-label w-100 h-100 d-flex flex-column justify-content-center" 
+                                           for="paymentCreditCard">
+                                        <i class="bi bi-credit-card-2-front fs-2 text-primary mb-2"></i>
+                                        <strong>כרטיס אשראי</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check payment-method-card h-100">
+                                    <input class="form-check-input" type="radio" name="PaymentMethod" 
+                                           id="paymentDebitCard" value="DebitCard" 
+                                           @(Model.PaymentMethod == "DebitCard" ? "checked" : "") 
+                                           onchange="toggleCardFields()">
+                                    <label class="form-check-label w-100 h-100 d-flex flex-column justify-content-center" 
+                                           for="paymentDebitCard">
+                                        <i class="bi bi-credit-card fs-2 text-success mb-2"></i>
+                                        <strong>כרטיס חיוב</strong>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check payment-method-card h-100">
+                                    <input class="form-check-input" type="radio" name="PaymentMethod" 
+                                           id="paymentPayPal" value="PayPal" 
+                                           @(Model.PaymentMethod == "PayPal" ? "checked" : "") 
+                                           onchange="toggleCardFields()">
+                                    <label class="form-check-label w-100 h-100 d-flex flex-column justify-content-center" 
+                                           for="paymentPayPal">
+                                        <i class="bi bi-paypal fs-2 text-info mb-2"></i>
+                                        <strong>PayPal</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                    </div>
+
+                    
+                    <div id="cardDetailsSection">
+                        <hr class="my-4">
+                        <h6 class="mb-3">
+                            <i class="bi bi-credit-card-2-front me-2"></i>פרטי הכרטיס
+                        </h6>
+
+                        <div class="mb-3">
+                            <label asp-for="CardNumber" class="form-label">
+                                <i class="bi bi-123 me-1"></i>מספר כרטיס
+                            </label>
+                            <input asp-for="CardNumber" class="form-control card-number-input" 
+                                   placeholder="1234 5678 9012 3456" maxlength="19" 
+                                   dir="ltr" style="text-align: left; font-family: monospace; letter-spacing: 2px;" />
+                            <small class="form-text text-muted">
+                                <i class="bi bi-shield-check me-1"></i>מספר הכרטיס לא יישמר במערכת
+                            </small>
+                            <span asp-validation-for="CardNumber" class="text-danger d-block"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CardHolderName" class="form-label">
+                                <i class="bi bi-person me-1"></i>שם בעל הכרטיס
+                            </label>
+                            <input asp-for="CardHolderName" class="form-control" 
+                                   placeholder="שם מלא כפי שמופיע על הכרטיס" />
+                            <span asp-validation-for="CardHolderName" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ExpiryDate" class="form-label">
+                                    <i class="bi bi-calendar-event me-1"></i>תאריך תפוגה (MM/YY)
+                                </label>
+                                <input asp-for="ExpiryDate" class="form-control expiry-date-input" 
+                                       placeholder="MM/YY" maxlength="5" dir="ltr" 
+                                       style="text-align: left; font-family: monospace;" />
+                                <small class="form-text text-muted">פורמט: חודש/שנה</small>
+                                <span asp-validation-for="ExpiryDate" class="text-danger d-block"></span>
+                                <span id="expiryDateError" class="text-danger d-none"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="CVV" class="form-label">
+                                    <i class="bi bi-lock me-1"></i>CVV
+                                </label>
+                                <input asp-for="CVV" class="form-control" placeholder="123" maxlength="4" 
+                                       dir="ltr" style="text-align: left; font-family: monospace;" />
+                                <small class="form-text text-muted">3 או 4 ספרות מאחורי הכרטיס</small>
+                                <span asp-validation-for="CVV" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        
+                        <div class="mb-3">
+                            <label asp-for="InstallmentsCount" class="form-label">
+                                <i class="bi bi-calendar-check me-1"></i>מספר תשלומים
+                            </label>
+                            <select asp-for="InstallmentsCount" class="form-select" id="installmentsSelect">
+                                <option value="1">תשלום אחד (מלוא הסכום)</option>
+                                <option value="2">2 תשלומים</option>
+                                <option value="3">3 תשלומים</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                ניתן לחלק את התשלום ל-2 או 3 תשלומים שווים
+                            </small>
+                            <div id="installmentsInfo" class="mt-2"></div>
+                            <span asp-validation-for="InstallmentsCount" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    
+                    <div id="paypalInfoSection" class="d-none">
+                        <hr class="my-4">
+                        <div class="alert alert-info">
+                            <h6>
+                                <i class="bi bi-paypal me-2"></i>תשלום באמצעות PayPal
+                            </h6>
+                            <p class="mb-2">
+                                לאחר לחיצה על "שלם", תועבר לדף התשלום של PayPal להשלמת התשלום.
+                            </p>
+                            <div class="mt-3">
+                                <div id="paypal-button-container" class="d-none"></div>
+                                <p class="small text-muted mb-0">
+                                    <i class="bi bi-shield-check me-1"></i>
+                                    תשלום מאובטח דרך PayPal
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="BillingAddress" class="form-label">
+                            <i class="bi bi-geo-alt me-1"></i>כתובת חיוב (אופציונלי)
+                        </label>
+                        <textarea asp-for="BillingAddress" class="form-control" rows="2" 
+                                  placeholder="הכנס כתובת חיוב אם נדרש"></textarea>
+                        <span asp-validation-for="BillingAddress" class="text-danger"></span>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-shield-check me-2"></i>
+                        <strong>הודעה אבטחה:</strong> פרטי הכרטיס שלך מעובדים בצורה מאובטחת ולא נשמרים במסד הנתונים שלנו.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle me-2"></i>ביטול
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+                            <i class="bi bi-check-circle me-2"></i>שלם @totalAmount.ToString("C")
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow-sm sticky-top" style="top: 20px;">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>מידע חשוב
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <i class="bi bi-shield-check text-success me-2"></i>
+                        <strong>תשלום מאובטח</strong>
+                        <br>
+                        <small class="text-muted">כל התשלומים מוגנים ומאובטחים</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="bi bi-credit-card text-primary me-2"></i>
+                        <strong>כרטיסי אשראי</strong>
+                        <br>
+                        <small class="text-muted">תמיכה בכל סוגי הכרטיסים</small>
+                    </li>
+                    <li class="mb-3">
+                        <i class="bi bi-paypal text-info me-2"></i>
+                        <strong>PayPal</strong>
+                        <br>
+                        <small class="text-muted">תשלום מהיר ובטוח</small>
+                    </li>
+                    <li>
+                        <i class="bi bi-arrow-counterclockwise text-warning me-2"></i>
+                        <strong>החזר כספי</strong>
+                        <br>
+                        <small class="text-muted">מדיניות החזר כספי מלאה</small>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        // Toggle card fields based on payment method
+        function toggleCardFields() {
+            const paymentMethod = document.querySelector('input[name="PaymentMethod"]:checked').value;
+            const cardSection = document.getElementById('cardDetailsSection');
+            const paypalSection = document.getElementById('paypalInfoSection');
+            const cardInputs = cardSection.querySelectorAll('input[required]');
+            
+            if (paymentMethod === 'PayPal') {
+                cardSection.classList.add('d-none');
+                paypalSection.classList.remove('d-none');
+                // Remove required from card fields
+                cardInputs.forEach(input => {
+                    input.removeAttribute('required');
+                    input.setAttribute('data-was-required', 'false');
+                });
+            } else {
+                cardSection.classList.remove('d-none');
+                paypalSection.classList.add('d-none');
+                // Add required to card fields
+                cardInputs.forEach(input => {
+                    input.setAttribute('required', 'required');
+                });
+            }
+        }
+
+        // Format card number (LTR - left to right)
+        document.getElementById('CardNumber')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+            
+            // Validate card number length
+            if (value.length < 13 || value.length > 19) {
+                e.target.setCustomValidity('מספר הכרטיס חייב להיות בין 13 ל-19 ספרות');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        // Format and validate expiry date (LTR - left to right)
+        document.getElementById('ExpiryDate')?.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.substring(0, 2) + '/' + value.substring(2, 4);
+            }
+            e.target.value = value;
+            
+            // Validate expiry date
+            validateExpiryDate(e.target);
+        });
+
+        // Validate expiry date on blur
+        document.getElementById('ExpiryDate')?.addEventListener('blur', function(e) {
+            validateExpiryDate(e.target);
+        });
+
+        function validateExpiryDate(input) {
+            const errorSpan = document.getElementById('expiryDateError');
+            const value = input.value;
+            
+            if (!value || value.length < 5) {
+                errorSpan.textContent = '';
+                errorSpan.classList.add('d-none');
+                input.setCustomValidity('אנא הכנס תאריך תפוגה תקין');
+                return;
+            }
+            
+            const parts = value.split('/');
+            if (parts.length !== 2) {
+                errorSpan.textContent = 'פורמט לא תקין. השתמש ב-MM/YY';
+                errorSpan.classList.remove('d-none');
+                input.setCustomValidity('פורמט לא תקין');
+                return;
+            }
+            
+            const month = parseInt(parts[0]);
+            const year = parseInt(parts[1]);
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear() % 100;
+            const currentMonth = currentDate.getMonth() + 1;
+            
+            // Validate month
+            if (month < 1 || month > 12) {
+                errorSpan.textContent = 'חודש לא תקין. השתמש בערכים 01-12';
+                errorSpan.classList.remove('d-none');
+                input.setCustomValidity('חודש לא תקין');
+                return;
+            }
+            
+            // Validate year (should be current year or future)
+            if (year < currentYear) {
+                errorSpan.textContent = 'הכרטיס פג תוקף. שנה זו כבר עברה';
+                errorSpan.classList.remove('d-none');
+                input.setCustomValidity('הכרטיס פג תוקף');
+                return;
+            }
+            
+            // If same year, check month
+            if (year === currentYear && month < currentMonth) {
+                errorSpan.textContent = 'הכרטיס פג תוקף. חודש זה כבר עבר';
+                errorSpan.classList.remove('d-none');
+                input.setCustomValidity('הכרטיס פג תוקף');
+                return;
+            }
+            
+            // Valid date
+            errorSpan.textContent = '';
+            errorSpan.classList.add('d-none');
+            input.setCustomValidity('');
+        }
+
+        // Format CVV
+        document.getElementById('CVV')?.addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleCardFields();
+        });
+
+        // Form submission validation
+        document.getElementById('paymentForm')?.addEventListener('submit', function(e) {
+            const paymentMethod = document.querySelector('input[name="PaymentMethod"]:checked').value;
+            
+            if (paymentMethod !== 'PayPal') {
+                const cardNumber = document.getElementById('CardNumber').value.replace(/\s/g, '');
+                const expiryDate = document.getElementById('ExpiryDate').value;
+                const cvv = document.getElementById('CVV').value;
+                
+                if (!cardNumber || cardNumber.length < 13) {
+                    e.preventDefault();
+                    alert('אנא הכנס מספר כרטיס תקין');
+                    return false;
+                }
+                
+                if (!expiryDate || expiryDate.length < 5) {
+                    e.preventDefault();
+                    alert('אנא הכנס תאריך תפוגה תקין');
+                    return false;
+                }
+                
+                if (!cvv || cvv.length < 3) {
+                    e.preventDefault();
+                    alert('אנא הכנס CVV תקין');
+                    return false;
+                }
+            }
+        });
+    </script>
+    
+    <style>
+        .payment-method-card {
+            border: 2px solid #dee2e6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .payment-method-card:hover {
+            border-color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+        
+        .payment-method-card input[type="radio"]:checked + label {
+            color: var(--primary-color);
+        }
+        
+        .payment-method-card input[type="radio"]:checked ~ .payment-method-card {
+            border-color: var(--primary-color);
+            background-color: #e7f3ff;
+        }
+        
+        .card-number-input,
+        .expiry-date-input {
+            direction: ltr;
+            text-align: left !important;
+        }
+    </style>
+}

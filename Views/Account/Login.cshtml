@@ -1,0 +1,61 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "התחברות";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white text-center">
+                <h3 class="mb-0">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>התחברות
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>שימו לב:</strong> דף זה מיועד למשתמשים רגילים בלבד. אם אתם מנהל, אנא השתמשו ב<a asp-action="LoginAdmin" class="alert-link">דף הכניסה למנהלים</a>.
+                </div>
+            <div class="card-body p-4">
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">
+                            <i class="bi bi-envelope me-1"></i>אימייל
+                        </label>
+                        <input asp-for="Email" class="form-control" placeholder="הכנס את כתובת האימייל שלך" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="bi bi-lock me-1"></i>סיסמה
+                        </label>
+                        <input asp-for="Password" class="form-control" placeholder="הכנס את הסיסמה שלך" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label">
+                            זכור אותי
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>התחבר
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <p class="text-muted">
+                            אין לך חשבון? 
+                            <a asp-action="Register" class="text-decoration-none">הירשם כאן</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

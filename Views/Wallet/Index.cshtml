@@ -1,0 +1,125 @@
+@using TripWings.Models
+@{
+    ViewData["Title"] = "הארנק שלי";
+    var balance = ViewBag.Balance as decimal? ?? 0;
+    var transactions = ViewBag.Transactions as List<WalletTransaction> ?? new List<WalletTransaction>();
+    var withdrawals = ViewBag.Withdrawals as List<BankWithdrawal> ?? new List<BankWithdrawal>();
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mb-4">
+                <i class="bi bi-wallet2 me-2"></i>הארנק שלי
+            </h2>
+
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">איזון נוכחי</h5>
+                    <h2 class="text-success">@balance.ToString("C")</h2>
+                    <a asp-action="Withdraw" class="btn btn-primary mt-3">
+                        <i class="bi bi-bank me-2"></i>משיכה לחשבון בנק
+                    </a>
+                </div>
+            </div>
+
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">היסטוריית עסקאות</h5>
+                </div>
+                <div class="card-body">
+                    @if (transactions.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>תאריך</th>
+                                        <th>סוג</th>
+                                        <th>סכום</th>
+                                        <th>תיאור</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var transaction in transactions)
+                                    {
+                                        <tr>
+                                            <td>@transaction.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <span class="badge bg-@(transaction.Type == WalletTransactionType.Deposit ? "success" : transaction.Type == WalletTransactionType.Withdrawal ? "warning" : "info")">
+                                                    @transaction.Type
+                                                </span>
+                                            </td>
+                                            <td class="@(transaction.Type == WalletTransactionType.Deposit ? "text-success" : "text-danger")">
+                                                @(transaction.Type == WalletTransactionType.Deposit ? "+" : "-")@transaction.Amount.ToString("C")
+                                            </td>
+                                            <td>@transaction.Description</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">אין עסקאות עדיין</p>
+                    }
+                </div>
+            </div>
+
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">בקשות משיכה</h5>
+                </div>
+                <div class="card-body">
+                    @if (withdrawals.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>תאריך בקשה</th>
+                                        <th>סכום</th>
+                                        <th>בנק</th>
+                                        <th>סטטוס</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var withdrawal in withdrawals)
+                                    {
+                                        <tr>
+                                            <td>@withdrawal.RequestedAt.ToString("dd/MM/yyyy")</td>
+                                            <td>@withdrawal.Amount.ToString("C")</td>
+                                            <td>@withdrawal.BankName</td>
+                                            <td>
+                                                <span class="badge bg-@(withdrawal.Status == WithdrawalStatus.Completed ? "success" : withdrawal.Status == WithdrawalStatus.Pending ? "warning" : withdrawal.Status == WithdrawalStatus.Rejected ? "danger" : "info")">
+                                                    @withdrawal.Status
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (withdrawal.Status == WithdrawalStatus.Completed || withdrawal.Status == WithdrawalStatus.Processed)
+                                                {
+                                                    <a asp-action="DownloadInvoice" asp-route-withdrawalId="@withdrawal.Id" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-download me-1"></i>הורד חשבונית
+                                                    </a>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">אין בקשות משיכה</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

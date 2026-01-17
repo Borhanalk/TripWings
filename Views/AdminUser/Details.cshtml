@@ -1,0 +1,212 @@
+@model AdminUserDetailsViewModel
+@{
+    ViewData["Title"] = "פרטי משתמש";
+}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">
+        <i class="bi bi-person-circle me-2"></i>פרטי משתמש: @Model.Email
+    </h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">פרטי משתמש</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">אימייל:</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        <dt class="col-sm-4">שם פרטי:</dt>
+                        <dd class="col-sm-8">@Model.FirstName</dd>
+
+                        <dt class="col-sm-4">שם משפחה:</dt>
+                        <dd class="col-sm-8">@Model.LastName</dd>
+
+                        <dt class="col-sm-4">תפקיד:</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsAdmin)
+                            {
+                                <span class="badge bg-danger">מנהל</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">משתמש</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">תאריך הרשמה:</dt>
+                        <dd class="col-sm-8">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm")</dd>
+
+                        <dt class="col-sm-4">סה"כ הוצאות:</dt>
+                        <dd class="col-sm-8"><strong>@Model.TotalSpent.ToString("C")</strong></dd>
+                    </dl>
+
+                    <form asp-action="ToggleAdmin" method="post" class="mt-3">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn btn-@(Model.IsAdmin ? "warning" : "danger")" onclick="return confirm('האם אתה בטוח שברצונך לשנות את תפקיד המשתמש?');">
+                            <i class="bi bi-@(Model.IsAdmin ? "person-x" : "person-check") me-2"></i>
+                            @(Model.IsAdmin ? "הסר מתפקיד מנהל" : "הוסף לתפקיד מנהל")
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">סטטיסטיקות</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-6">מספר הזמנות:</dt>
+                        <dd class="col-sm-6">@Model.Bookings.Count</dd>
+
+                        <dt class="col-sm-6">מספר תשלומים:</dt>
+                        <dd class="col-sm-6">@Model.Payments.Count</dd>
+
+                        <dt class="col-sm-6">תשלומים שולמו:</dt>
+                        <dd class="col-sm-6">@Model.Payments.Count(p => p.Status == PaymentStatus.Paid)</dd>
+
+                        <dt class="col-sm-6">תשלומים הוחזרו:</dt>
+                        <dd class="col-sm-6">@Model.Payments.Count(p => p.Status == PaymentStatus.Refunded)</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">הזמנות</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Bookings.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>מזהה</th>
+                                        <th>יעד</th>
+                                        <th>מספר חדרים</th>
+                                        <th>סטטוס</th>
+                                        <th>תאריך יצירה</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var booking in Model.Bookings)
+                                    {
+                                        <tr>
+                                            <td>#@booking.Id</td>
+                                            <td>@booking.TravelPackage.Destination</td>
+                                            <td>@booking.RoomsCount</td>
+                                            <td>
+                                                <span class="badge bg-@(booking.Status == BookingStatus.Active ? "success" : booking.Status == BookingStatus.Cancelled ? "danger" : "secondary")">
+                                                    @(booking.Status == BookingStatus.Active ? "פעיל" : booking.Status == BookingStatus.Cancelled ? "בוטל" : "הושלם")
+                                                </span>
+                                            </td>
+                                            <td>@booking.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">אין הזמנות.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">תשלומים</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Payments.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>מזהה</th>
+                                        <th>הזמנה</th>
+                                        <th>סכום</th>
+                                        <th>שיטת תשלום</th>
+                                        <th>סטטוס</th>
+                                        <th>תאריך</th>
+                                        <th>פעולות</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var payment in Model.Payments)
+                                    {
+                                        <tr>
+                                            <td>#@payment.Id</td>
+                                            <td>#@payment.BookingId</td>
+                                            <td>@payment.FinalAmount.ToString("C")</td>
+                                            <td>
+                                                @(payment.PaymentMethod == PaymentMethod.CreditCard ? "כרטיס אשראי" :
+                                                  payment.PaymentMethod == PaymentMethod.DebitCard ? "כרטיס חיוב" :
+                                                  payment.PaymentMethod == PaymentMethod.BankTransfer ? "העברה בנקאית" : "מזומן")
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-@(payment.Status == PaymentStatus.Paid ? "success" : payment.Status == PaymentStatus.Pending ? "warning" : payment.Status == PaymentStatus.Refunded ? "info" : "danger")">
+                                                    @(payment.Status == PaymentStatus.Paid ? "שולם" : payment.Status == PaymentStatus.Pending ? "ממתין" : payment.Status == PaymentStatus.Refunded ? "הוחזר" : "נכשל")
+                                                </span>
+                                            </td>
+                                            <td>@payment.PaymentDate.ToString("yyyy-MM-dd HH:mm")</td>
+                                            <td>
+                                                <a asp-controller="AdminPayment" asp-action="Details" asp-route-id="@payment.Id" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">אין תשלומים.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="bi bi-arrow-right me-2"></i>חזור לרשימה
+        </a>
+    </div>
+</div>

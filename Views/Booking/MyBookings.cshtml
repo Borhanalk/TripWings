@@ -1,0 +1,58 @@
+@model IEnumerable<Booking>
+@{
+    ViewData["Title"] = "My Bookings";
+}
+
+<h2>My Bookings</h2>
+
+@if (Model.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Destination</th>
+                <th>Country</th>
+                <th>Rooms</th>
+                <th>Status</th>
+                <th>Payment Status</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var booking in Model)
+            {
+                <tr>
+                    <td>@booking.TravelPackage.Destination</td>
+                    <td>@booking.TravelPackage.Country</td>
+                    <td>@booking.RoomsCount</td>
+                    <td>
+                        <span class="badge bg-@(booking.Status == BookingStatus.Active ? "success" : booking.Status == BookingStatus.Cancelled ? "danger" : "secondary")">
+                            @booking.Status
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-@(booking.PaymentStatus == PaymentStatus.Paid ? "success" : booking.PaymentStatus == PaymentStatus.Pending ? "warning" : "secondary")">
+                            @booking.PaymentStatus
+                        </span>
+                    </td>
+                    <td>@booking.CreatedAt.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@booking.Id" class="btn btn-sm btn-info">Details</a>
+                        @if (booking.Status == BookingStatus.Active)
+                        {
+                            <form asp-action="Cancel" asp-route-id="@booking.Id" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to cancel this booking?')">Cancel</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>You have no bookings yet.</p>
+    <a asp-controller="Trips" asp-action="Gallery" class="btn btn-primary">Browse Trips</a>
+}

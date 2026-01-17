@@ -1,0 +1,132 @@
+@model List<TravelPackageViewModel>
+@{
+    ViewData["Title"] = "הנחות / Discounts";
+}
+
+<div class="page-header text-center mb-4">
+    <h1 class="display-5 mb-2">
+        <i class="bi bi-percent me-2"></i>הנחות / Discounts
+    </h1>
+    <p class="lead mb-0">גלה את הטיולים במבצע / Discover trips on sale</p>
+</div>
+
+@if (Model != null && Model.Any())
+{
+    <div class="trips-grid">
+        <div class="row g-4">
+            @foreach (var trip in Model)
+            {
+                <div class="col-md-4 col-lg-3">
+                    <div class="trip-card-modern">
+                        @if (trip.HasActiveDiscount)
+                        {
+                            <div class="trip-discount-badge">
+                                <i class="bi bi-tag-fill me-1"></i>מבצע! / Sale!
+                            </div>
+                        }
+                        <div class="trip-image-container">
+                            @if (trip.ImageUrls.Any())
+                            {
+                                <img src="@trip.ImageUrls.First()" class="trip-image" alt="@trip.Destination">
+                            }
+                            else
+                            {
+                                <div class="trip-image-placeholder">
+                                    <i class="bi bi-image" style="font-size: 3rem;"></i>
+                                </div>
+                            }
+                            <div class="trip-overlay">
+                                <div class="trip-badges">
+                                    <span class="trip-badge-category">
+                                        <i class="bi bi-tag me-1"></i>@trip.PackageType
+                                    </span>
+                                    @if (trip.AgeLimit.HasValue)
+                                    {
+                                        <span class="trip-badge-age">
+                                            <i class="bi bi-person me-1"></i>מ-@trip.AgeLimit.Value שנים
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="trip-content">
+                            <div class="trip-header">
+                                <h5 class="trip-title">
+                                    <i class="bi bi-geo-alt-fill me-2"></i>@trip.Destination
+                                </h5>
+                                <p class="trip-country">
+                                    <i class="bi bi-flag me-1"></i>@trip.Country
+                                </p>
+                            </div>
+                            <div class="trip-details">
+                                <div class="trip-detail-item">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span>@trip.StartDate.ToString("dd/MM/yyyy") - @trip.EndDate.ToString("dd/MM/yyyy")</span>
+                                </div>
+                                <div class="trip-detail-item">
+                                    <i class="bi bi-door-open"></i>
+                                    <span>חדרים זמינים: @trip.RemainingRooms מתוך @trip.AvailableRooms</span>
+                                </div>
+                            </div>
+                            <div class="trip-price-section">
+                                @if (trip.HasActiveDiscount && trip.OldPrice.HasValue && trip.NewPrice.HasValue)
+                                {
+                                    <div class="price-container">
+                                        <span class="price-old">@trip.OldPrice.Value.ToString("C")</span>
+                                        <span class="price-new">@trip.NewPrice.Value.ToString("C")</span>
+                                        @if (trip.DiscountPercentage.HasValue)
+                                        {
+                                            <span class="discount-percentage">
+                                                -@trip.DiscountPercentage.Value.ToString("F0")%
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="price-container">
+                                        <span class="price-regular">@trip.Price.ToString("C")</span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="trip-actions">
+                                <a asp-controller="Trips" asp-action="Details" asp-route-id="@trip.Id" 
+                                   class="btn-trip-details">
+                                    <i class="bi bi-eye me-1"></i>פרטים / Details
+                                </a>
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <a asp-controller="Cart" asp-action="AddToCart" asp-route-travelPackageId="@trip.Id" 
+                                       class="btn-trip-cart">
+                                        <i class="bi bi-cart-plus me-1"></i>הוספה לעגלה / Add to Cart
+                                    </a>
+                                    <a asp-controller="Payment" asp-action="ProcessPayment" 
+                                       asp-route-travelPackageId="@trip.Id" asp-route-roomsCount="1" 
+                                       class="btn-trip-buy">
+                                        <i class="bi bi-credit-card me-1"></i>קנה עכשיו / Buy Now
+                                    </a>
+                                }
+                                else
+                                {
+                                    <a asp-controller="Account" asp-action="Login" class="btn-trip-login">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>התחבר להזמנה / Login to Book
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="empty-state-modern">
+        <div class="empty-icon">
+            <i class="bi bi-inbox"></i>
+        </div>
+        <h3 class="empty-title">לא נמצאו הנחות / No Discounts Found</h3>
+        <p class="empty-message">כרגע אין טיולים במבצע / Currently no trips on sale</p>
+    </div>
+}

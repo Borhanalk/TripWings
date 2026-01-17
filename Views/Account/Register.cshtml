@@ -1,0 +1,73 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "הרשמה";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">
+                    <i class="bi bi-person-plus me-2"></i>הרשמה
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Register" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="FirstName" class="form-label">
+                                <i class="bi bi-person me-1"></i>שם פרטי
+                            </label>
+                            <input asp-for="FirstName" class="form-control" placeholder="הכנס שם פרטי" />
+                            <span asp-validation-for="FirstName" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="LastName" class="form-label">
+                                <i class="bi bi-person me-1"></i>שם משפחה
+                            </label>
+                            <input asp-for="LastName" class="form-control" placeholder="הכנס שם משפחה" />
+                            <span asp-validation-for="LastName" class="text-danger"></span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">
+                            <i class="bi bi-envelope me-1"></i>אימייל
+                        </label>
+                        <input asp-for="Email" class="form-control" placeholder="הכנס כתובת אימייל" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="bi bi-lock me-1"></i>סיסמה
+                        </label>
+                        <input asp-for="Password" class="form-control" placeholder="הכנס סיסמה (לפחות 6 תווים)" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="ConfirmPassword" class="form-label">
+                            <i class="bi bi-lock-fill me-1"></i>אימות סיסמה
+                        </label>
+                        <input asp-for="ConfirmPassword" class="form-control" placeholder="הכנס שוב את הסיסמה" />
+                        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus me-2"></i>הירשם
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <p class="text-muted">
+                            כבר יש לך חשבון? 
+                            <a asp-action="Login" class="text-decoration-none">התחבר כאן</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

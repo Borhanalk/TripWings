@@ -1,0 +1,568 @@
+@model IEnumerable<TravelPackage>
+@{
+    ViewData["Title"] = "בית";
+}
+
+<div class="page-header text-center">
+    <h1 class="display-4 mb-3">
+        <i class="bi bi-airplane-fill me-2"></i>ברוכים הבאים לטריפווינגס
+    </h1>
+    <p class="lead mb-0">גלו יעדי טיול מדהימים ברחבי העולם</p>
+</div>
+
+
+@if (TempData["PaymentSuccess"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <h4 class="alert-heading">
+            <i class="bi bi-check-circle-fill me-2"></i>תשלום בוצע בהצלחה!
+        </h4>
+        <p>@TempData["PaymentSuccess"]</p>
+        <p class="mb-0">תקבל אימייל אישור בקרוב.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="סגור"></button>
+    </div>
+}
+
+@if (TempData["PaymentError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <h4 class="alert-heading">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>התשלום נכשל
+        </h4>
+        <p>@TempData["PaymentError"]</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="סגור"></button>
+    </div>
+}
+
+
+<div class="trips-section mt-5">
+    <div class="section-header mb-5">
+        <h2 class="section-title text-gradient">
+            <i class="bi bi-star-fill me-2" style="background: var(--gradient-warning); -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>טיולים מומלצים / Featured Trips
+        </h2>
+        <p class="section-subtitle">
+            יש לנו <strong class="text-gradient">@ViewBag.TotalTripsCount</strong> טיולים מדהימים זמינים! / 
+            We have <strong class="text-gradient">@ViewBag.TotalTripsCount</strong> amazing trips available!
+        </p>
+    </div>
+    
+    @if (Model != null && Model.Any())
+    {
+        <div class="trips-grid">
+            <div class="row g-4">
+                @foreach (var trip in Model)
+                {
+                    var activeDiscount = trip.Discounts.FirstOrDefault(d => 
+                        d.StartAt <= DateTime.UtcNow && d.EndAt >= DateTime.UtcNow && 
+                        (d.EndAt - d.StartAt).TotalDays <= 7);
+                    var firstImage = trip.PackageImages.FirstOrDefault()?.ImageUrl;
+                    var oldPrice = activeDiscount?.OldPrice ?? trip.Price;
+                    var newPrice = activeDiscount?.NewPrice ?? trip.Price;
+                    var discountPercentage = activeDiscount != null ? 
+                        (int)(((oldPrice - newPrice) / oldPrice) * 100) : (int?)null;
+
+                    <div class="col-md-4 col-lg-3">
+                        <div class="trip-card-modern fade-in">
+                            @if (activeDiscount != null)
+                            {
+                                <div class="trip-discount-badge">
+                                    <i class="bi bi-tag-fill me-1"></i>מבצע! / Sale!
+                                </div>
+                            }
+                            <div class="trip-image-container">
+                                @if (!string.IsNullOrEmpty(firstImage) && trip.PackageImages.Any())
+                                {
+                                    <img src="@firstImage" class="trip-image" alt="@trip.Destination">
+                                }
+                                else
+                                {
+                                    <div class="trip-image-placeholder">
+                                        <i class="bi bi-image" style="font-size: 3rem;"></i>
+                                    </div>
+                                }
+                                <div class="trip-overlay">
+                                    <div class="trip-badges">
+                                        <span class="trip-badge-category">
+                                            <i class="bi bi-tag me-1"></i>@trip.PackageType
+                                        </span>
+                                        @if (trip.AgeLimit.HasValue)
+                                        {
+                                            <span class="trip-badge-age">
+                                                <i class="bi bi-person me-1"></i>מ-@trip.AgeLimit.Value שנים
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="trip-content">
+                                <div class="trip-header">
+                                    <h5 class="trip-title">
+                                        <i class="bi bi-geo-alt-fill me-2"></i>@trip.Destination
+                                    </h5>
+                                    <p class="trip-country">
+                                        <i class="bi bi-flag me-1"></i>@trip.Country
+                                    </p>
+                                </div>
+                                <div class="trip-description">
+                                    <p>@(trip.Description?.Length > 100 ? trip.Description.Substring(0, 100) + "..." : trip.Description)</p>
+                                </div>
+                                <div class="trip-details">
+                                    <div class="trip-detail-item">
+                                        <i class="bi bi-calendar-event"></i>
+                                        <span>@trip.StartDate.ToString("dd/MM/yyyy") - @trip.EndDate.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                    <div class="trip-detail-item">
+                                        <i class="bi bi-door-open"></i>
+                                        <span>חדרים זמינים: @trip.RemainingRooms מתוך @trip.AvailableRooms</span>
+                                    </div>
+                                </div>
+                                <div class="trip-price-section">
+                                    @if (activeDiscount != null)
+                                    {
+                                        <div class="price-container">
+                                            <span class="price-old">@oldPrice.ToString("C")</span>
+                                            <span class="price-new">@newPrice.ToString("C")</span>
+                                            @if (discountPercentage.HasValue)
+                                            {
+                                                <span class="discount-percentage">
+                                                    -@discountPercentage.Value%
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="price-container">
+                                            <span class="price-regular">@trip.Price.ToString("C")</span>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="trip-actions">
+                                    <a asp-controller="Trips" asp-action="Details" asp-route-id="@trip.Id" 
+                                       class="btn-trip-details">
+                                        <i class="bi bi-eye me-1"></i>פרטים / Details
+                                    </a>
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <a asp-controller="Cart" asp-action="AddToCart" asp-route-travelPackageId="@trip.Id" 
+                                           class="btn-trip-cart">
+                                            <i class="bi bi-cart-plus me-1"></i>הוספה לעגלה / Add to Cart
+                                        </a>
+                                        <a asp-controller="Payment" asp-action="ProcessPayment" 
+                                           asp-route-travelPackageId="@trip.Id" asp-route-roomsCount="1" 
+                                           class="btn-trip-buy">
+                                            <i class="bi bi-credit-card me-1"></i>קנה עכשיו / Buy Now
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-controller="Account" asp-action="Login" class="btn-trip-login">
+                                            <i class="bi bi-box-arrow-in-right me-1"></i>התחבר להזמנה / Login to Book
+                                        </a>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state-modern">
+            <div class="empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="empty-title">אין טיולים זמינים כרגע / No Trips Available</h3>
+            <p class="empty-message">נסה שוב מאוחר יותר / Please try again later</p>
+        </div>
+    }
+</div>
+
+
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card shadow-lg">
+            <div class="card-header">
+                <h3 class="mb-0 text-white">
+                    <i class="bi bi-chat-dots me-2"></i>מה אומרים עלינו / What Our Customers Say
+                </h3>
+            </div>
+            <div class="card-body">
+                
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <div class="mb-4 p-4 border rounded" style="background: var(--gradient-light);">
+                        <h5 class="mb-3">
+                            <i class="bi bi-pencil-square me-2"></i>הוסף תגובה / Add Your Comment
+                        </h5>
+                        <form id="commentForm">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">דירוג / Rating:</label>
+                                <div class="star-rating-input">
+                                    @for (int i = 5; i >= 1; i--)
+                                    {
+                                        <input type="radio" name="rating" id="star@i" value="@i" required>
+                                        <label for="star@i" class="star-label">
+                                            <i class="bi bi-star-fill"></i>
+                                        </label>
+                                    }
+                                </div>
+                                <small class="text-muted d-block mt-2">בחר מספר כוכבים / Select number of stars</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">תגובה / Comment:</label>
+                                <textarea id="commentText" class="form-control" rows="4" 
+                                          placeholder="שתף את החוויה שלך... / Share your experience..." 
+                                          maxlength="2000" required></textarea>
+                                <small class="text-muted">
+                                    <span id="charCount">0</span> / 2000 תווים / characters
+                                </small>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-2"></i>שלח תגובה / Submit Comment
+                            </button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <a asp-controller="Account" asp-action="Login" class="alert-link">התחבר</a> כדי להוסיף תגובה / 
+                        <a asp-controller="Account" asp-action="Login" class="alert-link">Login</a> to add a comment
+                    </div>
+                }
+
+                
+                <div id="commentsContainer">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">טוען...</span>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="paginationContainer" class="mt-4 text-center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentPage = 1;
+        const pageSize = 10;
+
+        // Character counter
+        document.getElementById('commentText')?.addEventListener('input', function() {
+            document.getElementById('charCount').textContent = this.value.length;
+        });
+
+        // Star rating input
+        document.querySelectorAll('.star-rating-input input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const rating = parseInt(this.value);
+                document.querySelectorAll('.star-rating-input label').forEach((label, index) => {
+                    const starIndex = 5 - index;
+                    if (starIndex <= rating) {
+                        label.querySelector('i').classList.remove('bi-star');
+                        label.querySelector('i').classList.add('bi-star-fill');
+                        label.style.color = '#ffc107';
+                    } else {
+                        label.querySelector('i').classList.remove('bi-star-fill');
+                        label.querySelector('i').classList.add('bi-star');
+                        label.style.color = '#ccc';
+                    }
+                });
+            });
+        });
+
+        // Load comments
+        async function loadComments(page = 1) {
+            const container = document.getElementById('commentsContainer');
+            if (!container) return;
+
+            try {
+                const response = await fetch(`/Comment/GetComments?page=${page}&pageSize=${pageSize}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Check if there's an error but still show empty state
+                if (data.error) {
+                    console.warn('Comments loading warning:', data.error);
+                }
+
+                if (data.comments && data.comments.length > 0) {
+                    renderComments(data.comments);
+                    renderPagination(data.page, data.totalPages);
+                } else {
+                    container.innerHTML = 
+                        '<div class="alert alert-info text-center"><i class="bi bi-info-circle me-2"></i>אין תגובות עדיין. היה הראשון להוסיף תגובה! / No comments yet. Be the first to add a comment!</div>';
+                    document.getElementById('paginationContainer').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                // Show friendly message instead of error
+                container.innerHTML = 
+                    '<div class="alert alert-info text-center"><i class="bi bi-info-circle me-2"></i>אין תגובות עדיין. היה הראשון להוסיף תגובה! / No comments yet. Be the first to add a comment!</div>';
+                document.getElementById('paginationContainer').innerHTML = '';
+            }
+        }
+
+        // Render comments
+        function renderComments(comments) {
+            const container = document.getElementById('commentsContainer');
+            container.innerHTML = comments.map(comment => `
+                <div class="comment-item mb-4 p-3 border rounded" style="background: white;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-1 fw-bold">${escapeHtml(comment.userName)}</h6>
+                            <div class="star-rating-display mb-2">
+                                ${generateStars(comment.rating)}
+                            </div>
+                        </div>
+                        <small class="text-muted">${comment.createdAt}</small>
+                    </div>
+                    <p class="mb-2">${escapeHtml(comment.commentText)}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <button class="btn btn-sm btn-outline-primary helpful-btn" 
+                                data-comment-id="${comment.id}" 
+                                ${comment.currentUserHasRated ? 'disabled' : ''}>
+                            <i class="bi bi-hand-thumbs-up me-1"></i>
+                            <span class="helpful-text">זה עזר לי / This was helpful</span>
+                            <span class="helpful-count">(${comment.helpfulCount})</span>
+                        </button>
+                        <small class="text-muted">
+                            <i class="bi bi-people me-1"></i>
+                            ${comment.helpfulCount} אנשים מצאו את זה מועיל / ${comment.helpfulCount} people found this helpful
+                        </small>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach event listeners
+            document.querySelectorAll('.helpful-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const commentId = parseInt(this.dataset.commentId);
+                    await rateComment(commentId, true);
+                });
+            });
+        }
+
+        // Generate stars HTML
+        function generateStars(rating) {
+            let stars = '';
+            for (let i = 5; i >= 1; i--) {
+                if (i <= rating) {
+                    stars += '<i class="bi bi-star-fill text-warning"></i>';
+                } else {
+                    stars += '<i class="bi bi-star text-muted"></i>';
+                }
+            }
+            return stars;
+        }
+
+        // Render pagination
+        function renderPagination(currentPage, totalPages) {
+            if (totalPages <= 1) {
+                document.getElementById('paginationContainer').innerHTML = '';
+                return;
+            }
+
+            let pagination = '<nav><ul class="pagination justify-content-center">';
+            
+            if (currentPage > 1) {
+                pagination += `<li class="page-item"><a class="page-link" href="#" data-page="${currentPage - 1}">הקודם / Previous</a></li>`;
+            }
+
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    pagination += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
+                } else {
+                    pagination += `<li class="page-item"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+                }
+            }
+
+            if (currentPage < totalPages) {
+                pagination += `<li class="page-item"><a class="page-link" href="#" data-page="${currentPage + 1}">הבא / Next</a></li>`;
+            }
+
+            pagination += '</ul></nav>';
+            document.getElementById('paginationContainer').innerHTML = pagination;
+
+            // Attach pagination event listeners
+            document.querySelectorAll('.pagination a[data-page]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = parseInt(this.dataset.page);
+                    loadComments(page);
+                });
+            });
+        }
+
+        // Submit comment form
+        document.getElementById('commentForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const rating = document.querySelector('input[name="rating"]:checked')?.value;
+            const commentText = document.getElementById('commentText').value;
+
+            if (!rating || !commentText.trim()) {
+                alert('אנא מלא את כל השדות / Please fill all fields');
+                return;
+            }
+
+            try {
+                const response = await fetch('/Comment/Create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        rating: parseInt(rating),
+                        commentText: commentText
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error:', response.status, errorText);
+                    alert('שגיאה בשליחת התגובה / Error submitting comment: ' + response.statusText);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reset form
+                    document.getElementById('commentForm').reset();
+                    document.getElementById('charCount').textContent = '0';
+                    document.querySelectorAll('.star-rating-input label i').forEach(icon => {
+                        icon.classList.remove('bi-star-fill');
+                        icon.classList.add('bi-star');
+                        icon.style.color = '#ccc';
+                    });
+                    document.querySelectorAll('.star-rating-input input[type="radio"]').forEach(radio => {
+                        radio.checked = false;
+                    });
+
+                    // Reload comments
+                    loadComments(1);
+                    alert('תגובתך נשלחה בהצלחה! / Your comment has been submitted successfully!');
+                } else {
+                    alert('שגיאה בשליחת התגובה / Error submitting comment: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error submitting comment:', error);
+                alert('שגיאה בשליחת התגובה / Error submitting comment: ' + error.message);
+            }
+        });
+
+        // Rate comment
+        async function rateComment(commentId, isHelpful) {
+            try {
+                const response = await fetch('/Comment/RateComment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        commentId: commentId,
+                        isHelpful: isHelpful
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update the helpful count
+                    const btn = document.querySelector(`.helpful-btn[data-comment-id="${commentId}"]`);
+                    if (btn) {
+                        btn.disabled = true;
+                        const countSpan = btn.querySelector('.helpful-count');
+                        if (countSpan) {
+                            countSpan.textContent = `(${data.helpfulCount})`;
+                        }
+                        const helpfulText = btn.closest('.comment-item').querySelector('.text-muted');
+                        if (helpfulText) {
+                            helpfulText.innerHTML = `<i class="bi bi-people me-1"></i>${data.helpfulCount} אנשים מצאו את זה מועיל / ${data.helpfulCount} people found this helpful`;
+                        }
+                    }
+                } else {
+                    alert('שגיאה בדירוג התגובה / Error rating comment: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error rating comment:', error);
+                alert('שגיאה בדירוג התגובה / Error rating comment');
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load comments on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadComments(1);
+        });
+    </script>
+
+    <style>
+        .star-rating-input {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+
+        .star-rating-input input[type="radio"] {
+            display: none;
+        }
+
+        .star-rating-input label {
+            cursor: pointer;
+            font-size: 1.5rem;
+            color: #ccc;
+            transition: all 0.2s;
+        }
+
+        .star-rating-input label:hover,
+        .star-rating-input label:hover ~ label {
+            color: #ffc107;
+        }
+
+        .star-rating-input input[type="radio"]:checked ~ label {
+            color: #ffc107;
+        }
+
+        .star-rating-display {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 3px;
+        }
+
+        .comment-item {
+            transition: all 0.3s;
+        }
+
+        .comment-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .helpful-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+}

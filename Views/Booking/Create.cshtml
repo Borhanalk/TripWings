@@ -1,0 +1,64 @@
+@model TripWings.Models.ViewModels.BookingViewModel
+@{
+    ViewData["Title"] = "Create Booking";
+    var travelPackage = ViewBag.TravelPackage as TravelPackage;
+    var isFull = ViewBag.IsFull as bool? ?? false;
+    var remainingRooms = ViewBag.RemainingRooms as int? ?? 0;
+    var isInWaitingList = ViewBag.IsInWaitingList as bool? ?? false;
+}
+
+<h2>Book: @travelPackage?.Destination, @travelPackage?.Country</h2>
+
+@if (isFull)
+{
+    <div class="alert alert-warning">
+        <h4>No Rooms Available</h4>
+        <p>This travel package is currently full. You can join the waiting list to be notified when a room becomes available.</p>
+        @if (!isInWaitingList)
+        {
+            <a asp-action="JoinWaitingList" asp-route-travelPackageId="@travelPackage?.Id" class="btn btn-warning">Join Waiting List</a>
+        }
+        else
+        {
+            <p class="text-info">You are already on the waiting list for this package.</p>
+            <a asp-action="MyWaitingList" class="btn btn-info">View My Waiting List</a>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-success">
+        <strong>@remainingRooms</strong> room(s) available
+    </div>
+
+    <form asp-action="Create" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        
+        <input type="hidden" asp-for="TravelPackageId" />
+        
+        <div class="form-group mb-3">
+            <label asp-for="RoomsCount" class="control-label"></label>
+            <input asp-for="RoomsCount" class="form-control" type="number" min="1" max="@remainingRooms" />
+            <span asp-validation-for="RoomsCount" class="text-danger"></span>
+            <small class="form-text text-muted">Maximum @remainingRooms room(s) available</small>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-calendar-check me-2"></i>הזמן עכשיו
+            </button>
+            <a asp-controller="Trips" asp-action="Details" asp-route-id="@travelPackage?.Id" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-2"></i>ביטול
+            </a>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>שימו לב:</strong> לאחר בחירת מספר החדרים, תועברו לדף התשלום להשלמת ההזמנה.
+        </div>
+    </form>
+}
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

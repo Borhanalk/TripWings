@@ -1,0 +1,60 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "כניסה כמנהל";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white text-center">
+                <h3 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>כניסה כמנהל
+                </h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>שימו לב:</strong> דף זה מיועד למנהלים בלבד. אם אינכם מנהל, אנא השתמשו ב<a asp-action="Login" class="alert-link">דף ההתחברות הרגיל</a>.
+                </div>
+                <form asp-action="LoginAdmin" method="post">
+                    <div asp-validation-summary="All" class="alert alert-danger"></div>
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">
+                            <i class="bi bi-envelope me-1"></i>אימייל
+                        </label>
+                        <input asp-for="Email" class="form-control" placeholder="הכנס את כתובת האימייל שלך" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">
+                            <i class="bi bi-lock me-1"></i>סיסמה
+                        </label>
+                        <input asp-for="Password" class="form-control" placeholder="הכנס את הסיסמה שלך" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label">
+                            זכור אותי
+                        </label>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-dark btn-lg">
+                            <i class="bi bi-shield-check me-2"></i>התחבר כמנהל
+                        </button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <p class="text-muted">
+                            משתמש רגיל? 
+                            <a asp-action="Login" class="text-decoration-none">התחבר כאן</a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

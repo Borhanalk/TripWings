@@ -1,0 +1,189 @@
+@model IEnumerable<CartItem>
+@{
+    ViewData["Title"] = "עגלת קניות";
+    decimal total = ViewBag.Total as decimal? ?? 0;
+}
+
+<div class="page-header mb-4">
+    <h1 class="mb-2">
+        <i class="bi bi-cart me-2"></i>עגלת קניות
+    </h1>
+</div>
+
+@if (Model.Any())
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>תמונה</th>
+                            <th>יעד</th>
+                            <th>מדינה</th>
+                            <th>מחיר</th>
+                            <th>כמות</th>
+                            <th>סה"כ</th>
+                            <th>פעולות</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            var now = DateTime.UtcNow;
+                            var activeDiscount = item.TravelPackage.Discounts
+                                .FirstOrDefault(d => d.StartAt <= now && d.EndAt >= now && (d.EndAt - d.StartAt).TotalDays <= 7);
+                            var price = activeDiscount?.NewPrice ?? item.TravelPackage.Price;
+                            var subtotal = price * item.Quantity;
+                            var firstImage = item.TravelPackage.PackageImages.FirstOrDefault()?.ImageUrl;
+                            
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(firstImage))
+                                    {
+                                        <img src="@firstImage" alt="@item.TravelPackage.Destination" 
+                                             class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-secondary d-flex align-items-center justify-content-center" 
+                                             style="width: 80px; height: 80px; border-radius: 0.375rem;">
+                                            <i class="bi bi-image text-white"></i>
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    <strong>@item.TravelPackage.Destination</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="bi bi-tag me-1"></i>@item.TravelPackage.PackageType
+                                    </small>
+                                </td>
+                                <td>
+                                    <i class="bi bi-flag me-1"></i>@item.TravelPackage.Country
+                                </td>
+                                <td>
+                                    @if (activeDiscount != null)
+                                    {
+                                        <div>
+                                            <span class="price-old me-2">@activeDiscount.OldPrice.ToString("C")</span>
+                                            <span class="price-new">@price.ToString("C")</span>
+                                            <br>
+                                            <span class="badge bg-danger mt-1">
+                                                <i class="bi bi-tag-fill me-1"></i>מבצע!
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="fw-bold">@price.ToString("C")</span>
+                                    }
+                                </td>
+                                <td>
+                                    <form asp-action="UpdateQuantity" method="post" class="d-inline-flex align-items-center gap-2">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <div class="input-group" style="width: 120px;">
+                                            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                                    onclick="updateQuantity(@item.Id, -1)">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <input type="number" name="quantity" value="@item.Quantity" min="1" 
+                                                   max="@item.TravelPackage.RemainingRooms" 
+                                                   class="form-control form-control-sm text-center" 
+                                                   onchange="this.form.submit()" required>
+                                            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                                    onclick="updateQuantity(@item.Id, 1)">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </td>
+                                <td>
+                                    <strong class="text-primary fs-5">@subtotal.ToString("C")</strong>
+                                </td>
+                                <td>
+                                    <form asp-action="RemoveFromCart" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="btn btn-danger btn-sm" 
+                                                onclick="return confirm('האם אתה בטוח שברצונך להסיר פריט זה מהעגלה?')">
+                                            <i class="bi bi-trash me-1"></i>הסר
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="5" class="text-end">סה"כ:</th>
+                            <th class="fs-4 text-primary">@total.ToString("C")</th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">
+                        <i class="bi bi-info-circle me-2"></i>סיכום הזמנה
+                    </h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>מספר פריטים:</span>
+                        <strong>@Model.Count()</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>סה"כ כמות:</span>
+                        <strong>@Model.Sum(i => i.Quantity)</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fs-5">
+                        <strong>סה"כ לתשלום:</strong>
+                        <strong class="text-primary">@total.ToString("C")</strong>
+                    </div>
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="w-100">
+                        <div class="d-grid gap-2">
+                            <a asp-action="Checkout" class="btn btn-primary btn-lg">
+                                <i class="bi bi-credit-card me-2"></i>המשך לתשלום
+                            </a>
+                            <a asp-controller="Trips" asp-action="Gallery" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>המשך לקניות
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="empty-state">
+        <i class="bi bi-cart-x" style="font-size: 5rem; color: var(--gray-400);"></i>
+        <h3 class="mt-3">העגלה שלך ריקה</h3>
+        <p class="text-muted mb-4">התחל להוסיף טיולים לעגלה כדי להמשיך.</p>
+        <a asp-controller="Trips" asp-action="Gallery" class="btn btn-primary btn-lg">
+            <i class="bi bi-search me-2"></i>עיין בטיולים
+        </a>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function updateQuantity(id, change) {
+            const form = event.target.closest('form');
+            const input = form.querySelector('input[name="quantity"]');
+            const current = parseInt(input.value);
+            const max = parseInt(input.getAttribute('max'));
+            const newValue = Math.max(1, Math.min(max, current + change));
+            input.value = newValue;
+            form.submit();
+        }
+    </script>
+}
