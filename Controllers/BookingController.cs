@@ -38,7 +38,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إنشاء حجوزات كمستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים ליצור הזמנות כמשתמשים. / Admins cannot create bookings as users.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -54,10 +54,28 @@ public class BookingController : Controller
 
         var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(travelPackageId);
         
+        // Check if user has valid waiting list notification (position #1)
+        bool userHasValidNotification = false;
+        if (isFull || remainingRooms <= 0)
+        {
+            var waitingListEntry = await _context.WaitingListEntries
+                .Where(w => w.UserId == user.Id && 
+                           w.TravelPackageId == travelPackageId && 
+                           w.IsActive &&
+                           w.Position == 1 &&
+                           w.NotifiedAt.HasValue &&
+                           w.NotificationExpiresAt.HasValue &&
+                           w.NotificationExpiresAt.Value > DateTime.UtcNow)
+                .FirstOrDefaultAsync();
+            
+            userHasValidNotification = waitingListEntry != null;
+        }
+        
         ViewBag.TravelPackage = travelPackage;
-        ViewBag.IsFull = isFull;
+        ViewBag.IsFull = isFull && !userHasValidNotification; // Not full if user has valid notification
         ViewBag.RemainingRooms = remainingRooms;
         ViewBag.IsInWaitingList = await _waitingListService.IsUserInWaitingListAsync(user.Id, travelPackageId);
+        ViewBag.UserHasValidNotification = userHasValidNotification;
 
         return View(new Models.ViewModels.BookingViewModel 
         { 
@@ -73,7 +91,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إنشاء حجوزات كمستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים ליצור הזמנות כמשתמשים. / Admins cannot create bookings as users.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -160,7 +178,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الانضمام إلى قائمة الانتظار.";
+            TempData["Error"] = "מנהלים לא יכולים להצטרף לרשימת המתנה. / Admins cannot join the waiting list.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -207,16 +225,17 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى حجوزات المستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת להזמנות משתמשים. / Admins cannot access user bookings.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
+        // Only show paid bookings (PaymentStatus == Paid)
         var bookings = await _context.Bookings
             .Include(b => b.TravelPackage)
-            .Where(b => b.UserId == user.Id)
+            .Where(b => b.UserId == user.Id && b.PaymentStatus == PaymentStatus.Paid)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
@@ -229,7 +248,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى حجوزات المستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת להזמנות משתמשים. / Admins cannot access user bookings.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -254,7 +273,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إلغاء حجوزات المستخدمين من هنا. استخدم لوحة إدارة الحجوزات.";
+            TempData["Error"] = "מנהלים לא יכולים לבטל הזמנות משתמשים מכאן. השתמש בלוח ניהול ההזמנות. / Admins cannot cancel user bookings from here. Use the booking management panel.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -343,7 +362,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى قائمة انتظار المستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לרשימת המתנה של משתמשים. / Admins cannot access user waiting lists.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -363,6 +382,9 @@ public class BookingController : Controller
             var totalWaiting = await _waitingListService.GetWaitingListCountAsync(entry.TravelPackageId);
             var estimatedWait = await _waitingListService.EstimateWaitTimeAsync(entry.TravelPackageId, position);
             var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(entry.TravelPackageId);
+            
+            var isPackageAvailable = !isFull && remainingRooms > 0;
+            var wasPackageUpdated = isPackageAvailable && !entry.NotifiedAt.HasValue;
 
             viewModel.Add(new Models.ViewModels.WaitingListViewModel
             {
@@ -375,7 +397,10 @@ public class BookingController : Controller
                 TotalWaiting = totalWaiting,
                 EstimatedWaitTime = estimatedWait,
                 IsActive = entry.IsActive,
-                NotifiedAt = entry.NotifiedAt
+                NotifiedAt = entry.NotifiedAt,
+                IsPackageAvailable = isPackageAvailable,
+                RemainingRooms = remainingRooms,
+                WasPackageUpdated = wasPackageUpdated
             });
         }
 
@@ -389,7 +414,7 @@ public class BookingController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى قائمة انتظار المستخدمين.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לרשימת המתנה של משתמשים. / Admins cannot access user waiting lists.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -400,11 +425,11 @@ public class BookingController : Controller
 
         if (success)
         {
-            TempData["Success"] = "تم إزالتك من قائمة الانتظار بنجاح. / Successfully removed from waiting list.";
+            TempData["Success"] = "הוסרת בהצלחה מרשימת ההמתנה. / Successfully removed from waiting list.";
         }
         else
         {
-            TempData["Error"] = errorMessage ?? "حدث خطأ أثناء إزالتك من قائمة الانتظار. / An error occurred while removing you from the waiting list.";
+            TempData["Error"] = errorMessage ?? "אירעה שגיאה בעת הסרתך מרשימת ההמתנה. / An error occurred while removing you from the waiting list.";
         }
 
         return RedirectToAction("MyWaitingList");

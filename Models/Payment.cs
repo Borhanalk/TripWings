@@ -15,9 +15,6 @@ public class Payment
     public int? DiscountId { get; set; }
     public decimal DiscountAmount { get; set; } = 0;
     public decimal FinalAmount { get; set; }
-
-
-    public string? LastFourDigits { get; set; }
     
     [Range(1, 3, ErrorMessage = "מספר התשלומים חייב להיות בין 1 ל-3")]
     [Display(Name = "מספר תשלומים")]

@@ -1,18 +1,18 @@
 @model IEnumerable<WaitingList>
 @{
-    ViewData["Title"] = "قائمة الانتظار";
+    ViewData["Title"] = "רשימת המתנה / Waiting List";
 }
 
-<h2>قائمة الانتظار</h2>
+<h2>רשימת המתנה / Waiting List</h2>
 
 <table class="table">
     <thead>
         <tr>
-            <th>الباقة</th>
-            <th>عدد المسافرين</th>
-            <th>تاريخ الطلب</th>
-            <th>تم الإشعار</th>
-            <th>الإجراءات</th>
+            <th>חבילה / Package</th>
+            <th>מספר נוסעים / Number of Travelers</th>
+            <th>תאריך בקשה / Request Date</th>
+            <th>קיבל הודעה / Notified</th>
+            <th>פעולות / Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -25,20 +25,20 @@
                 <td>
                     @if (item.IsNotified)
                     {
-                        <span class="badge bg-success">نعم</span>
+                        <span class="badge bg-success">כן / Yes</span>
                     }
                     else
                     {
-                        <span class="badge bg-warning">لا</span>
+                        <span class="badge bg-warning">לא / No</span>
                     }
                 </td>
                 <td>
                     @if (item.Package.IsAvailable)
                     {
-                        <a asp-controller="Bookings" asp-action="Create" asp-route-packageId="@item.PackageId" class="btn btn-sm btn-success">احجز الآن</a>
+                        <a asp-controller="Bookings" asp-action="Create" asp-route-packageId="@item.PackageId" class="btn btn-sm btn-success">הזמן כעת / Book Now</a>
                     }
                     <form asp-action="RemoveFromWaitingList" asp-route-id="@item.Id" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('هل أنت متأكد من الحذف؟')">حذف</button>
+                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('האם אתה בטוח שברצונך למחוק? / Are you sure you want to delete?')">מחק / Delete</button>
                     </form>
                 </td>
             </tr>

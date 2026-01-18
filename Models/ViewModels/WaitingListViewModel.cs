@@ -12,4 +12,7 @@ public class WaitingListViewModel
     public TimeSpan? EstimatedWaitTime { get; set; }
     public bool IsActive { get; set; }
     public DateTime? NotifiedAt { get; set; }
+    public bool IsPackageAvailable { get; set; }
+    public int RemainingRooms { get; set; }
+    public bool WasPackageUpdated { get; set; }
 }

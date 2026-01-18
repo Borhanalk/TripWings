@@ -55,6 +55,18 @@ public class CommentController : Controller
             return Json(new { success = false, message = "User not found" });
         }
 
+        // Check if user already has a comment
+        var existingComment = await _context.SiteComments
+            .FirstOrDefaultAsync(c => c.UserId == user.Id);
+        
+        if (existingComment != null)
+        {
+            return Json(new { 
+                success = false, 
+                message = "יש לך כבר תגובה. אתה יכול להוסיף תגובה אחת בלבד / You already have a comment. Only one comment per user is allowed." 
+            });
+        }
+
         var comment = new SiteComment
         {
             UserId = user.Id,
@@ -189,6 +201,22 @@ public class CommentController : Controller
             helpfulCount = helpfulCount,
             hasRated = true
         });
+    }
+
+    [HttpGet]
+    [Authorize]
+    public async Task<IActionResult> HasComment()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return Json(new { hasComment = false });
+        }
+
+        var hasComment = await _context.SiteComments
+            .AnyAsync(c => c.UserId == user.Id);
+
+        return Json(new { hasComment });
     }
 
     [HttpGet]

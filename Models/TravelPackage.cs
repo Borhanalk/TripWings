@@ -64,6 +64,7 @@ public class TravelPackage
     public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
     public bool IsAvailable => IsVisible && RemainingRooms > 0 && EndDate > DateTime.UtcNow;
-    public int BookedRooms => Bookings.Count(b => b.Status == BookingStatus.Active);
+    // Only count paid bookings (PaymentStatus == Paid) as booked rooms
+    public int BookedRooms => Bookings.Count(b => b.Status == BookingStatus.Active && b.PaymentStatus == PaymentStatus.Paid);
     public int RemainingRooms => Math.Max(0, AvailableRooms - BookedRooms);
 }

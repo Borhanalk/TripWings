@@ -42,9 +42,10 @@ public class DashboardController : Controller
 
         var now = DateTime.UtcNow;
 
+        // Only show paid bookings (PaymentStatus == Paid)
         var bookings = await _context.Bookings
             .Include(b => b.TravelPackage)
-            .Where(b => b.UserId == user.Id && b.Status == BookingStatus.Active)
+            .Where(b => b.UserId == user.Id && b.Status == BookingStatus.Active && b.PaymentStatus == PaymentStatus.Paid)
             .OrderBy(b => b.TravelPackage.StartDate)
             .ToListAsync();
 

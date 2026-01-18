@@ -55,7 +55,17 @@ public class AdminBookingController : Controller
 
         var wasActive = booking.Status == BookingStatus.Active;
         booking.Status = BookingStatus.Cancelled;
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"✓ Booking cancelled successfully: ID={id}, UserId={booking.UserId}, PackageId={booking.TravelPackageId}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"✗ Failed to cancel booking in database: {ex.Message}");
+            TempData["Error"] = "An error occurred while cancelling the booking. Please try again.";
+            return RedirectToAction("Index");
+        }
 
         if (wasActive)
         {

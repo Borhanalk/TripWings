@@ -82,12 +82,6 @@
                             <dd class="col-sm-8">@Model.InstallmentAmount.ToString("C")</dd>
                         }
 
-                        @if (!string.IsNullOrEmpty(Model.LastFourDigits))
-                        {
-                            <dt class="col-sm-4">4 ספרות אחרונות:</dt>
-                            <dd class="col-sm-8">****@Model.LastFourDigits</dd>
-                        }
-
                         @if (!string.IsNullOrEmpty(Model.TransactionId))
                         {
                             <dt class="col-sm-4">מזהה עסקה:</dt>

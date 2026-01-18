@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TripWings.Data;
 using TripWings.Models;
 using TripWings.Models.ViewModels;
+using TripWings.Services;
 
 namespace TripWings.Controllers;
 
@@ -30,7 +31,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -64,7 +65,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -88,6 +89,15 @@ public class CartController : Controller
             return RedirectToAction("Details", "Trips", new { id = travelPackageId });
         }
 
+        var bookingService = HttpContext.RequestServices.GetRequiredService<IBookingService>();
+        var (hasActiveNotification, notifiedUserId) = await bookingService.HasActiveWaitingListNotificationAsync(travelPackageId);
+        
+        if (hasActiveNotification && notifiedUserId != user.Id)
+        {
+            TempData["Error"] = "חדר זמין כרגע, אך משתמש אחר ברשימת ההמתנה (מיקום #1) קיבל עדיפות. אנא המתן לתורך. / A room is available, but another user in the waiting list (position #1) has priority. Please wait for your turn.";
+            return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+        }
+
         var existingItem = await _context.CartItems
             .FirstOrDefaultAsync(c => c.UserId == user.Id && c.TravelPackageId == travelPackageId);
 
@@ -102,7 +112,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -113,6 +123,15 @@ public class CartController : Controller
         if (travelPackage == null || !travelPackage.IsAvailable)
         {
             TempData["Error"] = "החבילה לא זמינה.";
+            return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+        }
+
+        var bookingService = HttpContext.RequestServices.GetRequiredService<IBookingService>();
+        var (hasActiveNotification, notifiedUserId) = await bookingService.HasActiveWaitingListNotificationAsync(travelPackageId);
+        
+        if (hasActiveNotification && notifiedUserId != user.Id)
+        {
+            TempData["Error"] = "חדר זמין כרגע, אך משתמש אחר ברשימת ההמתנה (מיקום #1) קיבל עדיפות. אנא המתן לתורך. / A room is available, but another user in the waiting list (position #1) has priority. Please wait for your turn.";
             return RedirectToAction("Details", "Trips", new { id = travelPackageId });
         }
 
@@ -146,7 +165,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -173,7 +192,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -205,7 +224,7 @@ public class CartController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى عربة التسوق.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לעגלת הקניות. / Admins cannot access the shopping cart.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 

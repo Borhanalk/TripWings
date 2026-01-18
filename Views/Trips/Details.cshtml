@@ -59,9 +59,16 @@
             <div class="card-body">
                 <div class="mb-3">
                     <strong>
-                        <i class="bi bi-tag me-1"></i>קטגוריה:
+                        <i class="bi bi-tag me-1"></i>קטגוריה / Category:
                     </strong>
                     <span class="badge bg-secondary">@Model.PackageType</span>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>
+                        <i class="bi bi-building me-1"></i>מספר חדרים כולל / Total Rooms:
+                    </strong>
+                    <span>@(ViewBag.TotalRooms as int? ?? Model.TotalRooms)</span>
                 </div>
                 
                 @if (Model.AgeLimit.HasValue)
@@ -86,25 +93,44 @@
                 
                 <div class="mb-3">
                     <strong>
-                        <i class="bi bi-door-open me-1"></i>חדרים זמינים:
+                        <i class="bi bi-door-open me-1"></i>חדרים זמינים / Available Rooms:
                     </strong>
-                    @if (Model.RemainingRooms > 0)
-                    {
-                        <span class="text-success">@Model.RemainingRooms מתוך @Model.AvailableRooms</span>
+                    @{
+                        var remainingRooms = ViewBag.RemainingRooms as int? ?? 0;
+                        var availableRooms = ViewBag.AvailableRooms as int? ?? Model.AvailableRooms;
+                        var bookedRooms = ViewBag.BookedRooms as int? ?? 0;
+                        var totalRooms = ViewBag.TotalRooms as int? ?? Model.TotalRooms;
+                        var waitingListCount = ViewBag.WaitingListCount as int? ?? 0;
                     }
-                    else
-                    {
-                        <span class="text-danger">אין חדרים זמינים</span>
-                        @if (Model.WaitingListEntries.Any(w => w.IsActive))
+                    <div class="mt-2">
+                        @if (remainingRooms > 0)
                         {
-                            <div class="mt-2">
-                                <small class="text-muted">
-                                    <i class="bi bi-clock-history me-1"></i>
-                                    @Model.WaitingListEntries.Count(w => w.IsActive) משתמשים ברשימת המתנה
-                                </small>
+                            <div class="alert alert-success mb-2">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <strong>@remainingRooms</strong> חדרים זמינים / <strong>@remainingRooms</strong> rooms available
                             </div>
                         }
-                    }
+                        else
+                        {
+                            <div class="alert alert-danger mb-2">
+                                <i class="bi bi-x-circle me-2"></i>
+                                <strong>אין חדרים זמינים / No rooms available</strong>
+                            </div>
+                        }
+                        <div class="small text-muted">
+                            <div><i class="bi bi-info-circle me-1"></i>סה"כ חדרים / Total Rooms: <strong>@totalRooms</strong></div>
+                            <div><i class="bi bi-check-circle me-1"></i>חדרים זמינים / Available Rooms: <strong>@availableRooms</strong></div>
+                            <div><i class="bi bi-calendar-check me-1"></i>חדרים מוזמנים / Booked Rooms: <strong>@bookedRooms</strong></div>
+                            <div><i class="bi bi-door-open me-1"></i>חדרים נותרים / Remaining Rooms: <strong>@remainingRooms</strong></div>
+                            @if (waitingListCount > 0)
+                            {
+                                <div class="mt-2">
+                                    <i class="bi bi-clock-history me-1"></i>
+                                    <strong>@waitingListCount</strong> משתמשים ברשימת המתנה / <strong>@waitingListCount</strong> users in waiting list
+                                </div>
+                            }
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="mb-4">
@@ -130,8 +156,33 @@
                 <div class="d-grid gap-2">
                     @if (User.Identity?.IsAuthenticated == true)
                     {
-                        @if (Model.IsAvailable)
+                        var isAvailable = ViewBag.IsAvailable as bool? ?? Model.IsAvailable;
+                        var userHasValidNotification = ViewBag.UserHasValidNotification as bool? ?? false;
+                        var hasOtherUserActiveNotification = ViewBag.HasOtherUserActiveNotification as bool? ?? false;
+                        
+                        @if (hasOtherUserActiveNotification)
                         {
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>חדר זמין כרגע, אך משתמש אחר ברשימת ההמתנה (מיקום #1) קיבל עדיפות.</strong> אנא המתן לתורך. / 
+                                <strong>A room is available, but another user in the waiting list (position #1) has priority.</strong> Please wait for your turn.
+                            </div>
+                            <a asp-controller="Booking" asp-action="JoinWaitingList" asp-route-travelPackageId="@Model.Id" 
+                               class="btn btn-warning btn-lg w-100">
+                                <i class="bi bi-clock-history me-2"></i>הצטרף לרשימת המתנה
+                            </a>
+                        }
+                        else if (isAvailable || userHasValidNotification)
+                        {
+                            @if (userHasValidNotification && !Model.IsAvailable)
+                            {
+                                <div class="alert alert-success mb-3">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <strong>יש לך התראה פעילה!</strong> אתה במצב #1 ברשימת המתנה ויש לך 10 דקות להזמין. / 
+                                    <strong>You have an active notification!</strong> You are position #1 in the waiting list and have 10 minutes to book.
+                                </div>
+                            }
+                            
                             <a asp-controller="Booking" asp-action="Create" asp-route-travelPackageId="@Model.Id" 
                                class="btn btn-primary btn-lg">
                                 <i class="bi bi-calendar-check me-2"></i>הזמן עכשיו
@@ -141,10 +192,13 @@
                                class="btn btn-success btn-lg">
                                 <i class="bi bi-credit-card me-2"></i>קנה עכשיו
                             </a>
-                            <a asp-controller="Cart" asp-action="AddToCart" asp-route-travelPackageId="@Model.Id" 
-                               class="btn btn-outline-primary">
-                                <i class="bi bi-cart-plus me-2"></i>הוסף לעגלה
-                            </a>
+                            @if (Model.IsAvailable)
+                            {
+                                <a asp-controller="Cart" asp-action="AddToCart" asp-route-travelPackageId="@Model.Id" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-cart-plus me-2"></i>הוסף לעגלה
+                                </a>
+                            }
                         }
                         else
                         {

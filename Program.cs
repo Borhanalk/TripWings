@@ -46,6 +46,7 @@ builder.Services.AddScoped<TripWings.Services.IItineraryService, TripWings.Servi
 builder.Services.AddScoped<TripWings.Services.IPayPalService, TripWings.Services.PayPalService>();
 builder.Services.AddScoped<TripWings.Services.IWalletService, TripWings.Services.WalletService>();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<TripWings.Services.NotificationService>();
 
 builder.Services.AddHostedService<TripWings.Services.ReminderBackgroundService>();
 builder.Services.AddHostedService<TripWings.Services.WaitingListBackgroundService>();

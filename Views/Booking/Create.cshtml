@@ -5,11 +5,25 @@
     var isFull = ViewBag.IsFull as bool? ?? false;
     var remainingRooms = ViewBag.RemainingRooms as int? ?? 0;
     var isInWaitingList = ViewBag.IsInWaitingList as bool? ?? false;
+    var userHasValidNotification = ViewBag.UserHasValidNotification as bool? ?? false;
+    var canBook = !isFull || userHasValidNotification;
 }
 
 <h2>Book: @travelPackage?.Destination, @travelPackage?.Country</h2>
 
-@if (isFull)
+@if (userHasValidNotification && isFull)
+{
+    <div class="alert alert-success">
+        <h4>
+            <i class="bi bi-check-circle me-2"></i>יש לך התראה פעילה! / You have an active notification!
+        </h4>
+        <p>
+            <strong>אתה במצב #1 ברשימת המתנה / You are position #1 in the waiting list</strong><br>
+            יש לך 10 דקות להזמין לפני שההתראה תפוג. / You have 10 minutes to book before the notification expires.
+        </p>
+    </div>
+}
+else if (isFull)
 {
     <div class="alert alert-warning">
         <h4>No Rooms Available</h4>
@@ -25,10 +39,15 @@
         }
     </div>
 }
-else
+
+@if (canBook)
 {
     <div class="alert alert-success">
-        <strong>@remainingRooms</strong> room(s) available
+        <strong>@(remainingRooms > 0 ? remainingRooms.ToString() : "1")</strong> room(s) available
+        @if (userHasValidNotification && remainingRooms <= 0)
+        {
+            <span class="text-muted">(Available for you as position #1 in waiting list)</span>
+        }
     </div>
 
     <form asp-action="Create" method="post">
@@ -38,9 +57,18 @@ else
         
         <div class="form-group mb-3">
             <label asp-for="RoomsCount" class="control-label"></label>
-            <input asp-for="RoomsCount" class="form-control" type="number" min="1" max="@remainingRooms" />
+            <input asp-for="RoomsCount" class="form-control" type="number" min="1" max="@(remainingRooms > 0 ? remainingRooms : 1)" value="1" />
             <span asp-validation-for="RoomsCount" class="text-danger"></span>
-            <small class="form-text text-muted">Maximum @remainingRooms room(s) available</small>
+            <small class="form-text text-muted">
+                @if (remainingRooms > 0)
+                {
+                    <text>Maximum @remainingRooms room(s) available</text>
+                }
+                else if (userHasValidNotification)
+                {
+                    <text>You can book 1 room as position #1 in waiting list</text>
+                }
+            </small>
         </div>
 
         <div class="form-group">

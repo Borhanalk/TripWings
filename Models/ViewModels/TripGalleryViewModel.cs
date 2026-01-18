@@ -33,6 +33,7 @@ public class TravelPackageViewModel
     public DateTime EndDate { get; set; }
     public decimal Price { get; set; }
     public int AvailableRooms { get; set; }
+    public int TotalRooms { get; set; }
     public string PackageType { get; set; } = string.Empty;
     public int? AgeLimit { get; set; }
     public string? Description { get; set; }

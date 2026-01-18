@@ -45,7 +45,7 @@ public class PaymentController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إجراء عمليات دفع.";
+            TempData["Error"] = "מנהלים לא יכולים לבצע תשלומים. / Admins cannot make payments.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -73,10 +73,38 @@ public class PaymentController : Controller
             }
 
             var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(travelPackageId.Value);
+            
+            // Check if there's an active waiting list notification for another user
+            var (hasActiveNotification, notifiedUserId) = await _bookingService.HasActiveWaitingListNotificationAsync(travelPackageId.Value);
+            
+            if (hasActiveNotification && notifiedUserId != user.Id)
+            {
+                TempData["Error"] = "חדר זמין כרגע, אך משתמש אחר ברשימת ההמתנה (מיקום #1) קיבל עדיפות. אנא המתן לתורך. / A room is available, but another user in the waiting list (position #1) has priority. Please wait for your turn.";
+                return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+            }
+            
+            // If package is full, check if user has valid waiting list notification
             if (isFull || remainingRooms <= 0)
             {
-                TempData["Error"] = "החבילה הזו כבר לא זמינה. / This package is no longer available.";
-                return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+                // Check if user is first in waiting list with valid notification
+                var waitingListEntry = await _context.WaitingListEntries
+                    .Where(w => w.UserId == user.Id && 
+                               w.TravelPackageId == travelPackageId.Value && 
+                               w.IsActive &&
+                               w.Position == 1 &&
+                               w.NotifiedAt.HasValue &&
+                               w.NotificationExpiresAt.HasValue &&
+                               w.NotificationExpiresAt.Value > DateTime.UtcNow)
+                    .FirstOrDefaultAsync();
+                
+                if (waitingListEntry == null)
+                {
+                    TempData["Error"] = "החבילה הזו כבר לא זמינה. / This package is no longer available.";
+                    return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+                }
+                
+                // User has valid notification, allow payment
+                _logger.LogInformation($"User {user.Id} proceeding with payment for full package {travelPackageId.Value} with valid waiting list notification (position #1)");
             }
 
             var requestedRooms = roomsCount ?? 1;
@@ -147,7 +175,7 @@ public class PaymentController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إجراء عمليات دفع.";
+            TempData["Error"] = "מנהלים לא יכולים לבצע תשלומים. / Admins cannot make payments.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -362,8 +390,9 @@ public class PaymentController : Controller
                 var finalAmount = bookingPrice - discountAmount;
                 var installmentAmount = finalAmount / model.InstallmentsCount;
                 
-                var cardNumber = model.CardNumber?.Replace(" ", "").Replace("-", "") ?? "";
-                var lastFour = cardNumber.Length >= 4 ? cardNumber.Substring(cardNumber.Length - 4) : "****";
+                // IMPORTANT SECURITY: Never store any card information (not even last 4 digits)
+                // All card information (number, CVV, expiry date, cardholder name) is processed in memory and immediately discarded
+                // No card data is ever saved to database
                 
                 var payment = new Payment
                 {
@@ -376,13 +405,15 @@ public class PaymentController : Controller
                     DiscountId = activeDiscount?.Id,
                     DiscountAmount = discountAmount,
                     FinalAmount = finalAmount,
-                    LastFourDigits = lastFour,
                     InstallmentsCount = model.InstallmentsCount,
                     InstallmentAmount = installmentAmount
                 };
                 
                 _context.Payments.Add(payment);
                 payments.Add(payment);
+                
+                // Update booking payment status to Paid
+                bookingWithDiscounts.PaymentStatus = PaymentStatus.Paid;
             }
             
             await _context.SaveChangesAsync();
@@ -423,7 +454,7 @@ public class PaymentController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم إجراء عمليات دفع.";
+            TempData["Error"] = "מנהלים לא יכולים לבצע תשלומים. / Admins cannot make payments.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -544,6 +575,9 @@ public class PaymentController : Controller
                 
                 _context.Payments.Add(payment);
                 payments.Add(payment);
+                
+                // Update booking payment status to Paid
+                bookingWithDiscounts.PaymentStatus = PaymentStatus.Paid;
             }
             
             await _context.SaveChangesAsync();
@@ -595,12 +629,23 @@ public class PaymentController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+    /// <summary>
+    /// Processes payment with credit card information.
+    /// SECURITY: This method processes card information in memory only and NEVER stores ANY card data:
+    /// - Full card number (NOT stored, NOT logged, NOT saved anywhere)
+    /// - Last 4 digits (NOT stored, NOT logged, NOT saved anywhere)
+    /// - CVV code (NOT stored, NOT logged, NOT saved anywhere)
+    /// - Expiry date (NOT stored, NOT logged, NOT saved anywhere)
+    /// - Cardholder name (NOT stored, NOT logged, NOT saved anywhere)
+    /// All sensitive card data is discarded immediately after validation and processing.
+    /// No card information is ever persisted to database, logs, or any storage.
+    /// </summary>
     private async Task<(bool Success, string? ErrorMessage)> ProcessPaymentAsync(PaymentViewModel model, ApplicationUser user)
     {
 
         try
         {
-
+            // SECURITY: Card information is validated but never stored
             if (string.IsNullOrWhiteSpace(model.CardNumber))
             {
                 return (false, "מספר כרטיס נדרש לתשלום בכרטיס אשראי/חיוב.");
@@ -631,19 +676,38 @@ public class PaymentController : Controller
             var randomCard = new Random();
             if (randomCard.Next(100) < 90)
             {
-                var cardNumber = model.CardNumber.Replace(" ", "").Replace("-", "");
-                var lastFour = cardNumber.Length >= 4 ? cardNumber.Substring(cardNumber.Length - 4) : "****";
-                _logger.LogInformation($"Payment processed for user {user.Id}. Card: ****{lastFour}");
+                // SECURITY: Never log any card information (not even last 4 digits)
+                // Clear sensitive data from memory immediately
+                model.CardNumber = null;
+                model.CVV = null;
+                model.ExpiryDate = null;
+                model.CardHolderName = null;
+                
+                _logger.LogInformation($"Payment processed successfully for user {user.Id}. Payment method: Credit Card");
                 return (true, null);
             }
             else
             {
+                // Clear sensitive data even on failure
+                model.CardNumber = null;
+                model.CVV = null;
+                model.ExpiryDate = null;
+                model.CardHolderName = null;
+                
                 return (false, "התשלום נדחה על ידי הבנק. אנא בדוק את פרטי הכרטיס.");
             }
         }
         catch (Exception ex)
         {
+            // SECURITY: Never log card information in error logs
             _logger.LogError(ex, $"Error processing payment for user {user.Id}");
+            
+            // Clear sensitive data on error
+            model.CardNumber = null;
+            model.CVV = null;
+            model.ExpiryDate = null;
+            model.CardHolderName = null;
+            
             return (false, "אירעה שגיאה בעת עיבוד התשלום. אנא נסה שוב.");
         }
     }

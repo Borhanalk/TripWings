@@ -12,7 +12,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-body">
-                    <form asp-action="Create" method="post" enctype="multipart/form-data">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data" id="createForm">
                         @Html.AntiForgeryToken()
 
                         <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
@@ -34,13 +34,14 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="StartDate" class="form-label"></label>
-                                <input asp-for="StartDate" type="date" class="form-control" />
+                                <input asp-for="StartDate" type="date" class="form-control" id="startDate" min="@DateTime.UtcNow.AddDays(1).ToString("yyyy-MM-dd")" />
                                 <span asp-validation-for="StartDate" class="text-danger"></span>
+                                <small class="text-muted">התאריך חייב להיות לפחות יום אחד מהיום (מתחיל ממחר) / Date must be at least one day from today (starts from tomorrow)</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 <label asp-for="EndDate" class="form-label"></label>
-                                <input asp-for="EndDate" type="date" class="form-control" />
+                                <input asp-for="EndDate" type="date" class="form-control" id="endDate" />
                                 <span asp-validation-for="EndDate" class="text-danger"></span>
                             </div>
                         </div>
@@ -72,7 +73,17 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label asp-for="PackageType" class="form-label"></label>
-                                <input asp-for="PackageType" class="form-control" placeholder="לדוגמה: Luxury, Budget, Family" />
+                                <select asp-for="PackageType" class="form-select">
+                                    <option value="">בחר סוג חבילה / Select Package Type</option>
+                                    <option value="Luxury">Luxury</option>
+                                    <option value="Budget">Budget</option>
+                                    <option value="Family">Family</option>
+                                    <option value="Cultural">Cultural</option>
+                                    <option value="Beach">Beach</option>
+                                    <option value="Adventure">Adventure</option>
+                                    <option value="City">City</option>
+                                    <option value="Historical">Historical</option>
+                                </select>
                                 <span asp-validation-for="PackageType" class="text-danger"></span>
                             </div>
 
@@ -91,11 +102,10 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="ImageUrls" class="form-label"></label>
-                            <textarea asp-for="ImageUrls" class="form-control" rows="5" 
-                                      placeholder="הכנס כתובות תמונות (URL), מופרדות בפסיק או שורה חדשה&#10;לדוגמה:&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg"></textarea>
-                            <span asp-validation-for="ImageUrls" class="text-danger"></span>
-                            <small class="text-muted">ניתן להוסיף מספר תמונות. כל כתובת בשורה נפרדת או מופרדת בפסיק.</small>
+                            <label asp-for="Images" class="form-label"></label>
+                            <input asp-for="Images" type="file" class="form-control" accept="image/*" multiple />
+                            <span asp-validation-for="Images" class="text-danger"></span>
+                            <small class="text-muted">ניתן להעלות עד 2 תמונות. פורמטים נתמכים: JPG, PNG, GIF / You can upload up to 2 images. Supported formats: JPG, PNG, GIF</small>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -240,6 +250,56 @@
                         this.setCustomValidity('New price must be less than old price');
                     } else {
                         this.setCustomValidity('');
+                    }
+                });
+            }
+
+            // Update end date min based on start date
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            
+            if (startDateInput && endDateInput) {
+                startDateInput.addEventListener('change', function() {
+                    if (this.value) {
+                        const startDate = new Date(this.value);
+                        startDate.setDate(startDate.getDate() + 1);
+                        endDateInput.min = startDate.toISOString().slice(0, 10);
+                        
+                        // If end date is before new min, update it
+                        if (endDateInput.value && new Date(endDateInput.value) < startDate) {
+                            endDateInput.value = startDate.toISOString().slice(0, 10);
+                        }
+                    }
+                });
+            }
+
+            // Validate image files
+            const imagesInput = document.querySelector('input[type="file"][name="Images"]');
+            const createForm = document.getElementById('createForm');
+            
+            if (imagesInput && createForm) {
+                createForm.addEventListener('submit', function(e) {
+                    const files = imagesInput.files;
+                    if (files.length > 2) {
+                        e.preventDefault();
+                        alert('ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.');
+                        return false;
+                    }
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            e.preventDefault();
+                            alert('פורמט קובץ לא נתמך. פורמטים נתמכים: JPG, PNG, GIF / Unsupported file format. Supported formats: JPG, PNG, GIF');
+                            return false;
+                        }
+                        
+                        if (file.size > 5 * 1024 * 1024) {
+                            e.preventDefault();
+                            alert(`הקובץ ${file.name} גדול מדי. גודל מקסימלי: 5MB / File ${file.name} is too large. Maximum size: 5MB`);
+                            return false;
+                        }
                     }
                 });
             }

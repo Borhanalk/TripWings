@@ -24,17 +24,19 @@ public class HomeController : Controller
             return RedirectToAction("Index", "AdminDashboard");
         }
 
+        var today = DateTime.UtcNow.Date;
+        
         var featuredTrips = await _context.TravelPackages
             .Include(t => t.PackageImages)
             .Include(t => t.Discounts)
             .Include(t => t.Bookings) // Include bookings to calculate RemainingRooms correctly
-            .Where(t => t.IsVisible)
+            .Where(t => t.IsVisible && t.StartDate.Date > today)
             .OrderByDescending(t => t.CreatedAt)
             .Take(6)
             .ToListAsync();
 
         var totalTripsCount = await _context.TravelPackages
-            .Where(t => t.IsVisible)
+            .Where(t => t.IsVisible && t.StartDate.Date > today)
             .CountAsync();
 
         ViewBag.TotalTripsCount = totalTripsCount;

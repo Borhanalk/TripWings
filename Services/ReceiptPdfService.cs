@@ -167,10 +167,6 @@ public class ReceiptPdfService : IReceiptPdfService
                                 _ => "אחר / Other"
                             };
                             col.Item().Text(paymentMethodText);
-                            if (!string.IsNullOrEmpty(payment.LastFourDigits))
-                            {
-                                col.Item().Text($"4 ספרות אחרונות / Last 4 Digits: ****{payment.LastFourDigits}");
-                            }
                             if (payment.InstallmentsCount > 1)
                             {
                                 col.Item().Text($"מספר תשלומים / Installments: {payment.InstallmentsCount}");

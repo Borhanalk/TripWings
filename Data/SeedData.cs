@@ -19,11 +19,34 @@ public static class SeedData
         try
         {
             await context.Database.EnsureCreatedAsync();
+            
+            var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
+            var logger = loggerFactory?.CreateLogger("SeedData");
+            
+            try
+            {
+                var sql = @"
+                    IF EXISTS (
+                        SELECT 1 
+                        FROM sys.columns 
+                        WHERE object_id = OBJECT_ID(N'[dbo].[Payments]') 
+                        AND name = 'LastFourDigits'
+                    )
+                    BEGIN
+                        ALTER TABLE [dbo].[Payments]
+                        DROP COLUMN [LastFourDigits];
+                    END";
+                
+                await context.Database.ExecuteSqlRawAsync(sql);
+                logger?.LogInformation("LastFourDigits column removed from Payments table (if it existed).");
+            }
+            catch (Exception sqlEx)
+            {
+                logger?.LogWarning(sqlEx, "Could not remove LastFourDigits column. It may not exist.");
+            }
         }
         catch (Exception ex)
         {
-
-
             var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
             var logger = loggerFactory?.CreateLogger("SeedData");
             logger?.LogWarning(ex, "Warning: Could not ensure database is created. Continuing anyway...");
@@ -96,22 +119,59 @@ public static class SeedData
             context.TravelPackages.AddRange(packages);
             await context.SaveChangesAsync();
 
-            var imageUrls = new[]
+            var packageImages = new List<PackageImage>();
+            
+            var destinationImages = new Dictionary<string, string>
             {
-                "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800",
-                "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800",
-                "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800",
-                "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800",
-                "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800"
+                { "Paris,France", "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80" },
+                { "Tokyo,Japan", "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80" },
+                { "Dubai,UAE", "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=800&q=80" },
+                { "Bali,Indonesia", "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80" },
+                { "New York,USA", "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=800&q=80" },
+                { "London,UK", "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&q=80" },
+                { "Rome,Italy", "https://images.unsplash.com/photo-1529260830199-42c24126f198?w=800&q=80" },
+                { "Barcelona,Spain", "https://images.unsplash.com/photo-1539037116277-4db20889f2d4?w=800&q=80" },
+                { "Sydney,Australia", "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80" },
+                { "Cairo,Egypt", "https://images.unsplash.com/photo-1539650116574-75c0c6d73a6e?w=800&q=80" },
+                { "Bangkok,Thailand", "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?w=800&q=80" },
+                { "Singapore,Singapore", "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=800&q=80" },
+                { "Istanbul,Turkey", "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=800&q=80" },
+                { "Amsterdam,Netherlands", "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=800&q=80" },
+                { "Prague,Czech Republic", "https://images.unsplash.com/photo-1541849546-216549ae216d?w=800&q=80" },
+                { "Vienna,Austria", "https://images.unsplash.com/photo-1516550164669-4b0bb1b5b8ad?w=800&q=80" },
+                { "Athens,Greece", "https://images.unsplash.com/photo-1605152276907-419341d0b4e2?w=800&q=80" },
+                { "Lisbon,Portugal", "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=800&q=80" },
+                { "Berlin,Germany", "https://images.unsplash.com/photo-1587330979470-3585ac3d0c0e?w=800&q=80" },
+                { "Stockholm,Sweden", "https://images.unsplash.com/photo-1508672019048-805c876b67e2?w=800&q=80" },
+                { "Oslo,Norway", "https://images.unsplash.com/photo-1527004013197-933c4bb611b3?w=800&q=80" },
+                { "Copenhagen,Denmark", "https://images.unsplash.com/photo-1513622470522-26c3c8a854bc?w=800&q=80" },
+                { "Zurich,Switzerland", "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=800&q=80" },
+                { "Brussels,Belgium", "https://images.unsplash.com/photo-1555993530-9c0e0e0b0b0b?w=800&q=80" },
+                { "Warsaw,Poland", "https://images.unsplash.com/photo-1517154421773-0529f29ea451?w=800&q=80" },
+                { "Budapest,Hungary", "https://images.unsplash.com/photo-1551867634-194f224b3f12?w=800&q=80" },
+                { "Dublin,Ireland", "https://images.unsplash.com/photo-1561494653-744c43aed0c1?w=800&q=80" },
+                { "Edinburgh,UK", "https://images.unsplash.com/photo-1483728642387-6c3bdd6c93e5?w=800&q=80" }
             };
 
-            var packageImages = new List<PackageImage>();
             for (int i = 0; i < packages.Count; i++)
             {
+                var package = packages[i];
+                var key = $"{package.Destination},{package.Country}";
+                
+                string imageUrl;
+                if (destinationImages.TryGetValue(key, out var url))
+                {
+                    imageUrl = url;
+                }
+                else
+                {
+                    imageUrl = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800";
+                }
+                
                 packageImages.Add(new PackageImage
                 {
-                    TravelPackageId = packages[i].Id,
-                    ImageUrl = imageUrls[i % imageUrls.Length]
+                    TravelPackageId = package.Id,
+                    ImageUrl = imageUrl
                 });
             }
 

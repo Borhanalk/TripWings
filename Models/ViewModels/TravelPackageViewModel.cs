@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace TripWings.Models.ViewModels;
 
@@ -19,12 +20,12 @@ public class AdminTravelPackageViewModel
     [Required(ErrorMessage = "שדה חובה")]
     [DataType(DataType.Date)]
     [Display(Name = "תאריך התחלה")]
-    public DateTime StartDate { get; set; } = DateTime.UtcNow.AddDays(30);
+    public DateTime StartDate { get; set; } = DateTime.UtcNow.AddDays(1).Date;
 
     [Required(ErrorMessage = "שדה חובה")]
     [DataType(DataType.Date)]
     [Display(Name = "תאריך סיום")]
-    public DateTime EndDate { get; set; } = DateTime.UtcNow.AddDays(37);
+    public DateTime EndDate { get; set; } = DateTime.UtcNow.AddDays(8).Date;
 
     [Required(ErrorMessage = "שדה חובה")]
     [Range(0.01, double.MaxValue, ErrorMessage = "המחיר חייב להיות גדול מ-0")]
@@ -62,6 +63,9 @@ public class AdminTravelPackageViewModel
     public string? ImageUrls { get; set; }
 
     public List<string> ImageUrlList { get; set; } = new();
+
+    [Display(Name = "תמונות (עד 2 תמונות) / Images (up to 2 images)")]
+    public List<IFormFile>? Images { get; set; }
 
     [Display(Name = "Add Discount")]
     public bool AddDiscount { get; set; } = false;

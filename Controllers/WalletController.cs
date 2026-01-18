@@ -37,7 +37,7 @@ public class WalletController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى المحفظة.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לארנק. / Admins cannot access the wallet.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -61,7 +61,7 @@ public class WalletController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى المحفظة.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לארנק. / Admins cannot access the wallet.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -81,7 +81,7 @@ public class WalletController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا יכולים الوصول إلى المحفظة.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לארנק. / Admins cannot access the wallet.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 
@@ -135,7 +135,7 @@ public class WalletController : Controller
 
         if (User.IsInRole("Admin"))
         {
-            TempData["Error"] = "المسؤولون لا يمكنهم الوصول إلى المحفظة.";
+            TempData["Error"] = "מנהלים לא יכולים לגשת לארנק. / Admins cannot access the wallet.";
             return RedirectToAction("Index", "AdminDashboard");
         }
 

@@ -133,9 +133,17 @@ public class AdminDiscountController : Controller
         };
 
         _context.Discounts.Add(discount);
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Discount created successfully.";
+        try
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"✓ Discount created successfully: ID={discount.Id}, PackageId={model.TravelPackageId}, OldPrice={discount.OldPrice}, NewPrice={discount.NewPrice}");
+            TempData["Success"] = "Discount created successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"✗ Failed to save discount to database: {ex.Message}");
+            TempData["Error"] = "An error occurred while saving the discount. Please try again.";
+        }
         return RedirectToAction("Index");
     }
 
@@ -267,9 +275,17 @@ public class AdminDiscountController : Controller
         discount.StartAt = startAt;
         discount.EndAt = endAt;
 
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Discount updated successfully.";
+        try
+        {
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"✓ Discount updated successfully: ID={id}, PackageId={model.TravelPackageId}, OldPrice={discount.OldPrice}, NewPrice={discount.NewPrice}");
+            TempData["Success"] = "Discount updated successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"✗ Failed to update discount in database: {ex.Message}");
+            TempData["Error"] = "An error occurred while updating the discount. Please try again.";
+        }
         return RedirectToAction("Index");
     }
 
@@ -299,10 +315,18 @@ public class AdminDiscountController : Controller
             return NotFound();
         }
 
-        _context.Discounts.Remove(discount);
-        await _context.SaveChangesAsync();
-
-        TempData["Success"] = "Discount deleted successfully.";
+        try
+        {
+            _context.Discounts.Remove(discount);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation($"✓ Discount deleted successfully: ID={id}");
+            TempData["Success"] = "Discount deleted successfully.";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"✗ Failed to delete discount from database: {ex.Message}");
+            TempData["Error"] = "An error occurred while deleting the discount. Please try again.";
+        }
         return RedirectToAction("Index");
     }
 }

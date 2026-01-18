@@ -113,7 +113,7 @@
                                     </div>
                                     <div class="trip-detail-item">
                                         <i class="bi bi-door-open"></i>
-                                        <span>חדרים זמינים: @trip.RemainingRooms מתוך @trip.AvailableRooms</span>
+                                        <span>חדרים זמינים: @trip.RemainingRooms מתוך @trip.TotalRooms</span>
                                     </div>
                                 </div>
                                 <div class="trip-price-section">
@@ -255,6 +255,39 @@
     <script>
         let currentPage = 1;
         const pageSize = 10;
+
+        // Check if user has already commented and hide form if so
+        async function checkUserHasComment() {
+            const commentFormContainer = document.querySelector('#commentForm')?.closest('.mb-4');
+            if (!commentFormContainer) return;
+
+            try {
+                const response = await fetch('/Comment/HasComment');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.hasComment) {
+                        commentFormContainer.innerHTML = 
+                            '<div class="alert alert-info text-center mb-4">' +
+                            '<i class="bi bi-info-circle me-2"></i>' +
+                            'כבר הוספת תגובה. ניתן להוסיף תגובה אחת בלבד / ' +
+                            'You have already posted a comment. Only one comment per user is allowed.' +
+                            '</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking if user has comment:', error);
+            }
+        }
+
+        // Check on page load if user is authenticated
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <text>
+            document.addEventListener('DOMContentLoaded', function() {
+                checkUserHasComment();
+            });
+            </text>
+        }
 
         // Character counter
         document.getElementById('commentText')?.addEventListener('input', function() {
@@ -441,21 +474,18 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    // Reset form
-                    document.getElementById('commentForm').reset();
-                    document.getElementById('charCount').textContent = '0';
-                    document.querySelectorAll('.star-rating-input label i').forEach(icon => {
-                        icon.classList.remove('bi-star-fill');
-                        icon.classList.add('bi-star');
-                        icon.style.color = '#ccc';
-                    });
-                    document.querySelectorAll('.star-rating-input input[type="radio"]').forEach(radio => {
-                        radio.checked = false;
-                    });
+                    // Hide form after successful submission
+                    const commentFormContainer = document.querySelector('#commentForm')?.closest('.mb-4');
+                    if (commentFormContainer) {
+                        commentFormContainer.innerHTML = 
+                            '<div class="alert alert-success text-center mb-4">' +
+                            '<i class="bi bi-check-circle me-2"></i>' +
+                            'תגובתך נשלחה בהצלחה! / Your comment has been submitted successfully!' +
+                            '</div>';
+                    }
 
                     // Reload comments
                     loadComments(1);
-                    alert('תגובתך נשלחה בהצלחה! / Your comment has been submitted successfully!');
                 } else {
                     alert('שגיאה בשליחת התגובה / Error submitting comment: ' + (data.message || 'Unknown error'));
                 }

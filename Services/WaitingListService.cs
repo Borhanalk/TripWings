@@ -131,45 +131,145 @@ public class WaitingListService : IWaitingListService
     public async Task<List<WaitingListEntry>> GetNextInQueueAsync(int travelPackageId, int count = 1)
     {
         var now = DateTime.UtcNow;
-        return await _context.WaitingListEntries
+        _logger.LogInformation($"GetNextInQueueAsync called for package {travelPackageId}, count={count}, current time={now:yyyy-MM-dd HH:mm:ss} UTC");
+        
+        // Get users who:
+        // 1. Are active in waiting list
+        // 2. Either haven't been notified yet, OR their notification has expired
+        // 3. Ordered by position (first come, first served)
+        // IMPORTANT: Only get position 1 first, then position 2, etc.
+        var result = await _context.WaitingListEntries
             .Include(w => w.User)
             .Where(w => w.TravelPackageId == travelPackageId && 
                       w.IsActive && 
                       (!w.NotifiedAt.HasValue || 
-                       (w.NotificationExpiresAt.HasValue && w.NotificationExpiresAt.Value < now)))
+                       (w.NotificationExpiresAt.HasValue && w.NotificationExpiresAt.Value <= now)))
             .OrderBy(w => w.Position)
             .Take(count)
             .ToListAsync();
+        
+        _logger.LogInformation($"GetNextInQueueAsync found {result.Count} eligible entry/entries:");
+        foreach (var e in result)
+        {
+            var status = !e.NotifiedAt.HasValue 
+                ? "Never notified" 
+                : $"Previously notified, expired at {e.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC";
+            _logger.LogInformation($"  Position #{e.Position}: User {e.UserId} (Email: {e.User?.Email}), {status}");
+        }
+        
+        return result;
     }
 
     public async Task NotifyNextInQueueAsync(int travelPackageId, INotificationService notificationService)
     {
+        _logger.LogInformation($"=== NotifyNextInQueueAsync STARTED for package {travelPackageId} ===");
+        
+        // Check if there are rooms available first
+        var (isFull, remainingRooms) = await CheckAvailabilityAsync(travelPackageId);
+        _logger.LogInformation($"Package {travelPackageId} availability check: IsFull={isFull}, RemainingRooms={remainingRooms}");
+        
+        if (isFull || remainingRooms <= 0)
+        {
+            _logger.LogWarning($"No rooms available for package {travelPackageId}. Cannot notify waiting list. IsFull={isFull}, RemainingRooms={remainingRooms}");
+            return;
+        }
+
+        // Get all active waiting list entries for debugging
+        var allActiveEntries = await _context.WaitingListEntries
+            .Include(w => w.User)
+            .Where(w => w.TravelPackageId == travelPackageId && w.IsActive)
+            .OrderBy(w => w.Position)
+            .ToListAsync();
+        
+        _logger.LogInformation($"Found {allActiveEntries.Count} active waiting list entries for package {travelPackageId}:");
+        foreach (var e in allActiveEntries)
+        {
+            var notifiedStatus = e.NotifiedAt.HasValue 
+                ? $"Notified at {e.NotifiedAt:yyyy-MM-dd HH:mm:ss} UTC, Expires at {e.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC" 
+                : "Never notified";
+            _logger.LogInformation($"  Position #{e.Position}: User {e.UserId} (Email: {e.User?.Email}), {notifiedStatus}");
+        }
+
         var nextEntries = await GetNextInQueueAsync(travelPackageId, 1);
+        _logger.LogInformation($"GetNextInQueueAsync returned {nextEntries.Count} entry/entries");
         
         if (!nextEntries.Any())
         {
+            _logger.LogWarning($"No users in waiting list for package {travelPackageId} to notify. All users may have active notifications.");
             return;
         }
 
         var entry = nextEntries.First();
         var now = DateTime.UtcNow;
+        
+        _logger.LogInformation($"Selected user for notification: Position #{entry.Position}, UserId: {entry.UserId}, Email: {entry.User?.Email}");
+        
+        // Double check that this user hasn't been notified recently (shouldn't happen, but safety check)
+        if (entry.NotifiedAt.HasValue && 
+            entry.NotificationExpiresAt.HasValue && 
+            entry.NotificationExpiresAt.Value > now)
+        {
+            _logger.LogWarning($"User {entry.UserId} already has active notification for package {travelPackageId}. Notification expires at {entry.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC. Skipping.");
+            return;
+        }
+        
         entry.NotifiedAt = now;
         entry.NotificationExpiresAt = now.AddMinutes(10); // 10 minutes to book
         await _context.SaveChangesAsync();
+        _logger.LogInformation($"Updated waiting list entry: NotifiedAt={entry.NotifiedAt:yyyy-MM-dd HH:mm:ss} UTC, NotificationExpiresAt={entry.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC");
 
-        await notificationService.SendWaitingListNotificationAsync(
-            entry.User.Email!,
-            $"{entry.User.FirstName} {entry.User.LastName}",
-            travelPackageId,
-            entry.Position);
+        try
+        {
+            if (string.IsNullOrEmpty(entry.User?.Email))
+            {
+                _logger.LogError($"✗✗✗ User {entry.UserId} has no email address. Cannot send notification.");
+                return;
+            }
 
-        _logger.LogInformation($"Notified user {entry.UserId} about available room in package {travelPackageId}. Expires at {entry.NotificationExpiresAt}");
+            _logger.LogInformation($"📧 Preparing to send email notification...");
+            _logger.LogInformation($"  - User ID: {entry.UserId}");
+            _logger.LogInformation($"  - User Email: {entry.User.Email}");
+            _logger.LogInformation($"  - User Name: {entry.User.FirstName} {entry.User.LastName}");
+            _logger.LogInformation($"  - Package ID: {travelPackageId}");
+            _logger.LogInformation($"  - Position: #{entry.Position}");
+            _logger.LogInformation($"  - Notification Expires At: {entry.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC");
+            
+            _logger.LogInformation($"📧 Calling SendWaitingListNotificationAsync...");
+            await notificationService.SendWaitingListNotificationAsync(
+                entry.User.Email,
+                $"{entry.User.FirstName} {entry.User.LastName}",
+                travelPackageId,
+                entry.Position);
+
+            _logger.LogInformation($"✓✓✓ SUCCESS: Email notification sent successfully!");
+            _logger.LogInformation($"  - User: {entry.UserId} (Email: {entry.User.Email})");
+            _logger.LogInformation($"  - Position: #{entry.Position}");
+            _logger.LogInformation($"  - Package: {travelPackageId}");
+            _logger.LogInformation($"  - Notification Expires: {entry.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC");
+            _logger.LogInformation($"  - Time Remaining: 10 minutes");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"✗✗✗ ERROR: Failed to send waiting list notification email!");
+            _logger.LogError($"  - User ID: {entry.UserId}");
+            _logger.LogError($"  - User Email: {entry.User?.Email ?? "NULL"}");
+            _logger.LogError($"  - Package ID: {travelPackageId}");
+            _logger.LogError($"  - Exception Type: {ex.GetType().Name}");
+            _logger.LogError($"  - Exception Message: {ex.Message}");
+            _logger.LogError($"  - Stack Trace: {ex.StackTrace}");
+            // Don't throw - we still want to mark them as notified even if email fails
+            // The user can still see the notification in their waiting list page
+        }
+        
+        _logger.LogInformation($"=== NotifyNextInQueueAsync COMPLETED for package {travelPackageId} ===");
     }
 
     public async Task RemoveExpiredNotificationsAsync(int travelPackageId, INotificationService notificationService)
     {
         var now = DateTime.UtcNow;
 
+        // Find the first expired notification (should be position 1)
+        // We process one at a time to ensure proper queue order
         var expiredEntry = await _context.WaitingListEntries
             .Include(w => w.User)
             .Where(w => w.TravelPackageId == travelPackageId &&
@@ -185,35 +285,46 @@ public class WaitingListService : IWaitingListService
             return;
         }
 
+        // Remove expired entry (user who didn't book within 10 minutes)
+        var expiredPosition = expiredEntry.Position;
         expiredEntry.IsActive = false;
         await _context.SaveChangesAsync();
         
-        _logger.LogInformation($"Removed expired waiting list entry for user {expiredEntry.UserId} in package {travelPackageId}");
+        _logger.LogInformation($"Removed expired waiting list entry for user {expiredEntry.UserId} (position #{expiredPosition}) in package {travelPackageId}. Notification expired at {expiredEntry.NotificationExpiresAt:yyyy-MM-dd HH:mm:ss} UTC");
 
+        // Check if there are still rooms available and notify next user (now position 1)
         var (isFull, remainingRooms) = await CheckAvailabilityAsync(travelPackageId);
         if (!isFull && remainingRooms > 0)
         {
-
+            _logger.LogInformation($"Rooms available ({remainingRooms}) after removing expired entry. Notifying next user (now position #1) in queue for package {travelPackageId}");
             await NotifyNextInQueueAsync(travelPackageId, notificationService);
         }
     }
 
     private async Task<(bool IsFull, int RemainingRooms)> CheckAvailabilityAsync(int travelPackageId)
     {
+        // Use AsNoTracking to ensure we get fresh data from database
         var travelPackage = await _context.TravelPackages
+            .AsNoTracking()
             .Include(t => t.Bookings)
             .FirstOrDefaultAsync(t => t.Id == travelPackageId);
 
         if (travelPackage == null)
         {
+            _logger.LogWarning($"Package {travelPackageId} not found in CheckAvailabilityAsync");
             return (true, 0);
         }
 
+        // Only count paid bookings (PaymentStatus == Paid) as booked rooms
         var bookedRooms = travelPackage.Bookings
-            .Count(b => b.Status == BookingStatus.Active);
+            .Count(b => b.Status == BookingStatus.Active && b.PaymentStatus == PaymentStatus.Paid);
 
         var remainingRooms = travelPackage.AvailableRooms - bookedRooms;
-        return (remainingRooms <= 0, Math.Max(0, remainingRooms));
+        var isFull = remainingRooms <= 0;
+        
+        _logger.LogInformation($"CheckAvailabilityAsync for package {travelPackageId}: AvailableRooms={travelPackage.AvailableRooms}, BookedRooms={bookedRooms}, RemainingRooms={remainingRooms}, IsFull={isFull}");
+        
+        return (isFull, Math.Max(0, remainingRooms));
     }
 
     public async Task<(bool Success, string? ErrorMessage)> RemoveFromWaitingListAsync(int waitingListEntryId, string userId)

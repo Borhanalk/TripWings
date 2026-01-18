@@ -44,6 +44,7 @@
                                 <th>זמן משוער / Estimated Wait</th>
                                 <th>תאריך הצטרפות / Joined At</th>
                                 <th>סטטוס / Status</th>
+                                <th>חדרים זמינים / Available Rooms</th>
                                 <th>פעולות / Actions</th>
                             </tr>
                         </thead>
@@ -69,9 +70,21 @@
                                     </td>
                                     <td>@item.JoinedAt.ToString("dd/MM/yyyy")</td>
                                     <td>
-                                        @if (item.NotifiedAt.HasValue)
+                                        @if (item.IsPackageAvailable && item.WasPackageUpdated)
                                         {
                                             <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill me-1"></i>עודכן - זמין כעת / Updated - Available Now
+                                            </span>
+                                        }
+                                        else if (item.IsPackageAvailable)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle-fill me-1"></i>זמין / Available
+                                            </span>
+                                        }
+                                        else if (item.NotifiedAt.HasValue)
+                                        {
+                                            <span class="badge bg-warning">
                                                 <i class="bi bi-bell-fill me-1"></i>הוזהר / Notified
                                             </span>
                                         }
@@ -89,19 +102,44 @@
                                         }
                                     </td>
                                     <td>
+                                        @if (item.IsPackageAvailable)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>@item.RemainingRooms חדרים זמינים / @item.RemainingRooms rooms available
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-x-circle me-1"></i>לא זמין / Not Available
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
                                         <div class="d-flex gap-2 flex-wrap">
-                                            @if (item.Position == 1 || item.NotifiedAt.HasValue)
+                                            @if (item.IsPackageAvailable)
                                             {
                                                 <a asp-action="Create" asp-route-travelPackageId="@item.TravelPackageId" 
                                                    class="btn btn-sm btn-success">
-                                                    <i class="bi bi-calendar-check me-1"></i>احجز الآن / Book Now
+                                                    <i class="bi bi-calendar-check me-1"></i>הזמן כעת / Book Now
+                                                    @if (item.RemainingRooms > 0)
+                                                    {
+                                                        <span class="badge bg-light text-dark ms-1">@item.RemainingRooms חדרים זמינים / @item.RemainingRooms rooms</span>
+                                                    }
+                                                </a>
+                                            }
+                                            else if (item.Position == 1 || item.NotifiedAt.HasValue)
+                                            {
+                                                <a asp-action="Create" asp-route-travelPackageId="@item.TravelPackageId" 
+                                                   class="btn btn-sm btn-success">
+                                                    <i class="bi bi-calendar-check me-1"></i>הזמן כעת / Book Now
                                                 </a>
                                             }
                                             <form asp-action="RemoveFromWaitingList" asp-route-id="@item.Id" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-danger" 
-                                                        onclick="return confirm('هل أنت متأكد من إزالتك من قائمة الانتظار؟ / Are you sure you want to remove yourself from the waiting list?');">
-                                                    <i class="bi bi-trash me-1"></i>حذف / Remove
+                                                        onclick="return confirm('האם אתה בטוח שברצונך להסיר את עצמך מרשימת ההמתנה? / Are you sure you want to remove yourself from the waiting list?');">
+                                                    <i class="bi bi-trash me-1"></i>מחק / Remove
                                                 </button>
                                             </form>
                                         </div>

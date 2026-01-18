@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TripWings.Data;
 using TripWings.Models;
 using TripWings.Models.ViewModels;
+using TripWings.Services;
 
 namespace TripWings.Controllers;
 
@@ -30,11 +31,13 @@ public class TripsController : Controller
         string sortBy = "date",
         string sortOrder = "asc")
     {
+        var today = DateTime.UtcNow.Date;
+        
         var query = _context.TravelPackages
             .Include(t => t.PackageImages)
             .Include(t => t.Discounts)
             .Include(t => t.Bookings)
-            .Where(t => t.IsVisible);
+            .Where(t => t.IsVisible && t.StartDate.Date > today);
 
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
@@ -145,6 +148,7 @@ public class TripsController : Controller
             EndDate = t.EndDate,
             Price = t.Price,
             AvailableRooms = t.AvailableRooms,
+            TotalRooms = t.TotalRooms,
             PackageType = t.PackageType,
             AgeLimit = t.AgeLimit,
             Description = t.Description,
@@ -189,7 +193,7 @@ public class TripsController : Controller
             _ => tripViewModels.OrderBy(t => t.StartDate).ToList()
         };
 
-        var allTrips = await _context.TravelPackages.Where(t => t.IsVisible).ToListAsync();
+        var allTrips = await _context.TravelPackages.Where(t => t.IsVisible && t.StartDate.Date > today).ToListAsync();
         var destinations = allTrips.Select(t => t.Destination).Distinct().OrderBy(d => d).ToList();
         var countries = allTrips.Select(t => t.Country).Distinct().OrderBy(c => c).ToList();
         var categories = allTrips.Select(t => t.PackageType).Distinct().OrderBy(c => c).ToList();
@@ -221,6 +225,8 @@ public class TripsController : Controller
         var currentTime = DateTime.UtcNow;
         var maxEndDate = currentTime.AddDays(7);
 
+        var today = DateTime.UtcNow.Date;
+        
         var discounts = await _context.Discounts
             .Include(d => d.TravelPackage)
             .ThenInclude(t => t.PackageImages)
@@ -229,7 +235,8 @@ public class TripsController : Controller
             .Where(d => d.StartAt <= currentTime && 
                        d.EndAt >= currentTime && 
                        d.EndAt <= maxEndDate &&
-                       d.TravelPackage.IsVisible)
+                       d.TravelPackage.IsVisible &&
+                       d.TravelPackage.StartDate.Date > today)
             .ToListAsync();
 
         var activeDiscounts = discounts.Where(d => 
@@ -244,6 +251,7 @@ public class TripsController : Controller
             EndDate = d.TravelPackage.EndDate,
             Price = d.TravelPackage.Price,
             AvailableRooms = d.TravelPackage.AvailableRooms,
+            TotalRooms = d.TravelPackage.TotalRooms,
             PackageType = d.TravelPackage.PackageType,
             AgeLimit = d.TravelPackage.AgeLimit,
             Description = d.TravelPackage.Description,
@@ -264,7 +272,9 @@ public class TripsController : Controller
     {
         if (id == null) return NotFound();
 
+        // Use AsNoTracking to ensure we get fresh data from database
         var trip = await _context.TravelPackages
+            .AsNoTracking()
             .Include(t => t.PackageImages)
             .Include(t => t.Discounts)
             .Include(t => t.Bookings) // Include bookings to calculate RemainingRooms correctly
@@ -274,6 +284,64 @@ public class TripsController : Controller
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (trip == null) return NotFound();
+
+        // Check if current user has valid waiting list notification (position #1)
+        bool userHasValidNotification = false;
+        string? currentUserId = null;
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                var waitingListEntry = await _context.WaitingListEntries
+                    .Where(w => w.UserId == currentUserId && 
+                               w.TravelPackageId == id.Value && 
+                               w.IsActive &&
+                               w.Position == 1 &&
+                               w.NotifiedAt.HasValue &&
+                               w.NotificationExpiresAt.HasValue &&
+                               w.NotificationExpiresAt.Value > DateTime.UtcNow)
+                    .FirstOrDefaultAsync();
+                
+                userHasValidNotification = waitingListEntry != null;
+            }
+        }
+
+        // Check if there's an active waiting list notification for another user
+        var bookingService = HttpContext.RequestServices.GetRequiredService<IBookingService>();
+        var (hasActiveNotification, notifiedUserId) = await bookingService.HasActiveWaitingListNotificationAsync(id.Value);
+        bool hasOtherUserActiveNotification = hasActiveNotification && notifiedUserId != currentUserId;
+
+        // Recalculate remaining rooms to ensure accuracy from database
+        // Only count paid bookings (PaymentStatus == Paid) as booked rooms
+        var allBookings = await _context.Bookings
+            .Where(b => b.TravelPackageId == id.Value && 
+                       b.Status == BookingStatus.Active && 
+                       b.PaymentStatus == PaymentStatus.Paid)
+            .CountAsync();
+        
+        var bookedRooms = allBookings;
+        var remainingRooms = Math.Max(0, trip.AvailableRooms - bookedRooms);
+        var isAvailable = trip.IsVisible && remainingRooms > 0 && trip.EndDate > DateTime.UtcNow;
+        
+        // Get waiting list count from database
+        var waitingListCount = await _context.WaitingListEntries
+            .Where(w => w.TravelPackageId == id.Value && w.IsActive)
+            .CountAsync();
+
+        _logger.LogInformation($"=== TRIP DETAILS: Package {id} ===");
+        _logger.LogInformation($"AvailableRooms: {trip.AvailableRooms}, BookedRooms: {bookedRooms}, RemainingRooms: {remainingRooms}");
+        _logger.LogInformation($"Total Bookings in DB: {allBookings}, Waiting List Count: {waitingListCount}");
+        _logger.LogInformation($"HasActiveNotification: {hasActiveNotification}, NotifiedUserId: {notifiedUserId}, CurrentUserId: {currentUserId}");
+
+        ViewBag.UserHasValidNotification = userHasValidNotification;
+        ViewBag.IsAvailable = (isAvailable || userHasValidNotification) && !hasOtherUserActiveNotification;
+        ViewBag.HasOtherUserActiveNotification = hasOtherUserActiveNotification;
+        ViewBag.RemainingRooms = remainingRooms;
+        ViewBag.AvailableRooms = trip.AvailableRooms;
+        ViewBag.BookedRooms = bookedRooms;
+        ViewBag.TotalRooms = trip.TotalRooms;
+        ViewBag.WaitingListCount = waitingListCount;
 
         return View(trip);
     }
