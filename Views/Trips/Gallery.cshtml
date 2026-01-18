@@ -20,8 +20,9 @@
     </div>
     <div class="filter-body">
         <form method="get" asp-action="Gallery" class="filter-form">
-            <div class="row g-4">
-                <div class="col-md-3">
+            <div class="row g-3">
+                <!-- Row 1: Search and Basic Filters -->
+                <div class="col-md-4">
                     <div class="filter-field">
                         <label class="filter-label">
                             <i class="bi bi-search me-2"></i>חיפוש / Search
@@ -72,6 +73,40 @@
                         </select>
                     </div>
                 </div>
+                <div class="col-md-2">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-tag-fill me-2"></i>הנחות בלבד / On Sale Only
+                        </label>
+                        <div class="filter-checkbox">
+                            <input type="checkbox" name="onSaleOnly" id="onSaleOnly" class="filter-check-input" 
+                                   value="true" checked="@Model.OnSaleOnly">
+                            <label for="onSaleOnly" class="filter-check-label">
+                                <i class="bi bi-percent me-1"></i>הצג הנחות / Show Discounts
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Price Range and Travel Dates -->
+                <div class="col-md-3">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-currency-dollar me-2"></i>מחיר מינימלי / Min Price
+                        </label>
+                        <input type="number" name="minPrice" class="filter-input" value="@Model.MinPrice" 
+                               placeholder="0" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="filter-field">
+                        <label class="filter-label">
+                            <i class="bi bi-currency-dollar me-2"></i>מחיר מקסימלי / Max Price
+                        </label>
+                        <input type="number" name="maxPrice" class="filter-input" value="@Model.MaxPrice" 
+                               placeholder="999999" min="0" step="0.01">
+                    </div>
+                </div>
                 <div class="col-md-3">
                     <div class="filter-field">
                         <label class="filter-label">
@@ -79,54 +114,64 @@
                         </label>
                         <div class="date-range-input">
                             <input type="date" name="travelDateFrom" class="filter-input date-input" 
-                                   value="@Model.TravelDateFrom?.ToString("yyyy-MM-dd")">
+                                   value="@Model.TravelDateFrom?.ToString("yyyy-MM-dd")" 
+                                   placeholder="מ- / From">
                             <span class="date-separator">-</span>
                             <input type="date" name="travelDateTo" class="filter-input date-input" 
-                                   value="@Model.TravelDateTo?.ToString("yyyy-MM-dd")">
+                                   value="@Model.TravelDateTo?.ToString("yyyy-MM-dd")" 
+                                   placeholder="עד / To">
                         </div>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <div class="filter-field">
-                        <label class="filter-label">
-                            <i class="bi bi-sort-alpha-down me-2"></i>מיון / Sort By
-                        </label>
-                        <select name="sortBy" class="filter-select">
-                            <option value="date" selected="@(Model.SortBy == "date")">תאריך / Date</option>
-                            <option value="price" selected="@(Model.SortBy == "price")">מחיר / Price</option>
-                            <option value="popular" selected="@(Model.SortBy == "popular")">פופולרי / Popular</option>
-                            <option value="category" selected="@(Model.SortBy == "category")">קטגוריה / Category</option>
-                        </select>
+                <div class="col-md-3">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="filter-field">
+                                <label class="filter-label">
+                                    <i class="bi bi-sort-alpha-down me-2"></i>מיון / Sort By
+                                </label>
+                                <select name="sortBy" class="filter-select">
+                                    <option value="date" selected="@(Model.SortBy == "date")">תאריך / Date</option>
+                                    <option value="price" selected="@(Model.SortBy == "price")">מחיר / Price</option>
+                                    <option value="popular" selected="@(Model.SortBy == "popular")">פופולרי / Popular</option>
+                                    <option value="category" selected="@(Model.SortBy == "category")">קטגוריה / Category</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="filter-field">
+                                <label class="filter-label">
+                                    <i class="bi bi-arrow-up-down me-2"></i>סדר / Order
+                                </label>
+                                <select name="sortOrder" class="filter-select">
+                                    <option value="asc" selected="@(Model.SortOrder == "asc")">עולה / Asc</option>
+                                    <option value="desc" selected="@(Model.SortOrder == "desc")">יורד / Desc</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-2">
-                    <div class="filter-field">
-                        <label class="filter-label">
-                            <i class="bi bi-arrow-up-down me-2"></i>סדר / Order
-                        </label>
-                        <select name="sortOrder" class="filter-select">
-                            <option value="asc" selected="@(Model.SortOrder == "asc")">עולה / Ascending</option>
-                            <option value="desc" selected="@(Model.SortOrder == "desc")">יורד / Descending</option>
-                        </select>
-                    </div>
-                </div>
+
+                <!-- Row 3: Action Buttons -->
                 <div class="col-md-12">
-                    <div class="filter-actions">
-                        <button type="submit" class="btn-filter-search">
-                            <i class="bi bi-search me-2"></i>חפש / Search
-                        </button>
-                        <a asp-action="Gallery" class="btn-filter-reset">
-                            <i class="bi bi-arrow-clockwise me-2"></i>איפוס / Reset
-                        </a>
-                        <a asp-controller="Trips" asp-action="Discounts" class="btn-filter-discount">
-                            <i class="bi bi-percent me-2"></i>הנחות / Discounts
-                        </a>
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <a asp-controller="AdminDiscount" asp-action="Index" class="btn-filter-discount-admin">
-                                <i class="bi bi-gear me-2"></i>ניהול הנחות / Manage Discounts
+                    <div class="filter-actions-wrapper">
+                        <div class="filter-actions">
+                            <button type="submit" class="btn-filter-search">
+                                <i class="bi bi-search me-2"></i>חפש / Search
+                            </button>
+                            <a asp-action="Gallery" class="btn-filter-reset">
+                                <i class="bi bi-arrow-clockwise me-2"></i>איפוס / Reset
                             </a>
-                        }
+                            <a asp-controller="Trips" asp-action="Discounts" class="btn-filter-discount">
+                                <i class="bi bi-percent me-2"></i>הנחות / Discounts
+                            </a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="AdminDiscount" asp-action="Index" class="btn-filter-discount-admin">
+                                    <i class="bi bi-gear me-2"></i>ניהול הנחות / Manage Discounts
+                                </a>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
