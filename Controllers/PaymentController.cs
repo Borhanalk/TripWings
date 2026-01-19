@@ -233,7 +233,7 @@ public class PaymentController : Controller
             var cancelUrl = _configuration["PayPalSettings:CancelUrl"] ?? 
                 $"{Request.Scheme}://{Request.Host}/Payment/PayPalCancel";
 
-            var (success, paymentId, approvalUrl, errorMessage) = await _payPalService.CreatePaymentAsync(
+            var (success, paymentId, approvalUrl, payPalError) = await _payPalService.CreatePaymentAsync(
                 totalAmount,
                 "USD",
                 description,
@@ -262,7 +262,7 @@ public class PaymentController : Controller
             }
             else
             {
-                TempData["PaymentError"] = errorMessage ?? "תשלום PayPal נכשל. אנא נסה שוב.";
+                TempData["PaymentError"] = payPalError ?? "תשלום PayPal נכשל. אנא נסה שוב.";
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -317,24 +317,93 @@ public class PaymentController : Controller
 
             if (model.TravelPackageId.HasValue)
             {
+                // التحقق من التوفر مرة أخرى قبل إنشاء الحجز (لضمان عدم حجز نفس الرحلة من مستخدمين في نفس الوقت)
+                var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(model.TravelPackageId.Value);
+                var requestedRooms = model.RoomsCount ?? 1;
+                
+                // التحقق من وجود إشعار صالح من قائمة الانتظار
+                bool userHasValidNotification = false;
+                if (isFull || remainingRooms <= 0)
+                {
+                    var waitingListEntry = await _context.WaitingListEntries
+                        .Where(w => w.UserId == user.Id && 
+                                   w.TravelPackageId == model.TravelPackageId.Value && 
+                                   w.IsActive &&
+                                   w.Position == 1 &&
+                                   w.NotifiedAt.HasValue &&
+                                   w.NotificationExpiresAt.HasValue &&
+                                   w.NotificationExpiresAt.Value > DateTime.UtcNow)
+                        .FirstOrDefaultAsync();
+                    
+                    userHasValidNotification = waitingListEntry != null;
+                }
+                
+                // إذا كانت الرحلة ممتلئة ولا يوجد إشعار صالح، توجيه المستخدم إلى قائمة الانتظار
+                if ((isFull || remainingRooms < requestedRooms) && !userHasValidNotification)
+                {
+                    var travelPackage = await _context.TravelPackages
+                        .FirstOrDefaultAsync(t => t.Id == model.TravelPackageId.Value);
+                    
+                    if (travelPackage != null)
+                    {
+                        TempData["Error"] = $"הריילה הזו כבר נמכרה. רק {remainingRooms} חדר/ים זמינים, אך מישהו אחר כבר הזמין אותם. אתה יכול להצטרף לרשימת ההמתנה. / This trip has been sold out. Only {remainingRooms} room(s) available, but someone else has already booked them. You can join the waiting list.";
+                        return RedirectToAction("JoinWaitingList", "Booking", new { travelPackageId = model.TravelPackageId.Value });
+                    }
+                    else
+                    {
+                        TempData["Error"] = "החבילה לא נמצאה. / Travel package not found.";
+                        return RedirectToAction("Gallery", "Trips");
+                    }
+                }
+                
+                // التحقق من أن العدد المطلوب متاح
+                if (remainingRooms < requestedRooms && !userHasValidNotification)
+                {
+                    TempData["Error"] = $"רק {remainingRooms} חדר/ים זמינים. / Only {remainingRooms} room(s) available.";
+                    return RedirectToAction("Details", "Trips", new { id = model.TravelPackageId.Value });
+                }
 
                 var (success, errorMessage, booking) = await _bookingService.CreateBookingAsync(
                     user.Id,
                     model.TravelPackageId.Value,
-                    model.RoomsCount ?? 1);
+                    requestedRooms);
 
-                if (success && booking != null)
+                if (!success || booking == null)
                 {
-                    createdBookings.Add(booking);
-
-                    var cartItem = await _context.CartItems
-                        .FirstOrDefaultAsync(c => c.UserId == user.Id && c.TravelPackageId == model.TravelPackageId.Value);
+                    // إذا فشل إنشاء الحجز (مثلاً بسبب race condition)، توجيه المستخدم إلى قائمة الانتظار
+                    var travelPackage = await _context.TravelPackages
+                        .FirstOrDefaultAsync(t => t.Id == model.TravelPackageId.Value);
                     
-                    if (cartItem != null)
+                    if (travelPackage != null)
                     {
-                        _context.CartItems.Remove(cartItem);
-                        _logger.LogInformation($"Removed cart item for travel package {model.TravelPackageId.Value} after Buy Now payment for user {user.Id}");
+                        var (isFullNow, remainingRoomsNow) = await _bookingService.CheckAvailabilityAsync(model.TravelPackageId.Value);
+                        if (isFullNow || remainingRoomsNow <= 0)
+                        {
+                            TempData["Error"] = $"הריילה הזו כבר נמכרה. מישהו אחר כבר הזמין אותה. אתה יכול להצטרף לרשימת ההמתנה. / This trip has been sold out. Someone else has already booked it. You can join the waiting list.";
+                            return RedirectToAction("JoinWaitingList", "Booking", new { travelPackageId = model.TravelPackageId.Value });
+                        }
+                        else
+                        {
+                            TempData["Error"] = errorMessage ?? "לא ניתן ליצור הזמנה. אנא נסה שוב. / Unable to create booking. Please try again.";
+                            return RedirectToAction("Details", "Trips", new { id = model.TravelPackageId.Value });
+                        }
                     }
+                    else
+                    {
+                        TempData["Error"] = errorMessage ?? "לא ניתן ליצור הזמנה. / Unable to create booking.";
+                        return RedirectToAction("Gallery", "Trips");
+                    }
+                }
+
+                createdBookings.Add(booking);
+
+                var cartItem = await _context.CartItems
+                    .FirstOrDefaultAsync(c => c.UserId == user.Id && c.TravelPackageId == model.TravelPackageId.Value);
+                
+                if (cartItem != null)
+                {
+                    _context.CartItems.Remove(cartItem);
+                    _logger.LogInformation($"Removed cart item for travel package {model.TravelPackageId.Value} after Buy Now payment for user {user.Id}");
                 }
                 
                 await _context.SaveChangesAsync();
@@ -349,21 +418,34 @@ public class PaymentController : Controller
 
                 foreach (var cartItem in cartItems)
                 {
-
+                    // التحقق من التوفر مرة أخرى قبل إنشاء الحجز
                     var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(cartItem.TravelPackageId);
-                    if (!isFull && remainingRooms >= cartItem.Quantity)
+                    
+                    if (isFull || remainingRooms < cartItem.Quantity)
                     {
-                        var (success, _, booking) = await _bookingService.CreateBookingAsync(
-                            user.Id,
-                            cartItem.TravelPackageId,
-                            cartItem.Quantity);
+                        // الرحلة ممتلئة، إزالة من العربة وإعلام المستخدم
+                        _context.CartItems.Remove(cartItem);
+                        _logger.LogInformation($"Removed cart item {cartItem.Id} for package {cartItem.TravelPackageId} - trip sold out. User: {user.Id}");
+                        
+                        // تخطي هذا العنصر والمتابعة للعناصر الأخرى
+                        continue;
+                    }
+                    
+                    var (success, errorMessage, booking) = await _bookingService.CreateBookingAsync(
+                        user.Id,
+                        cartItem.TravelPackageId,
+                        cartItem.Quantity);
 
-                        if (success && booking != null)
-                        {
-                            createdBookings.Add(booking);
-
-                            _context.CartItems.Remove(cartItem);
-                        }
+                    if (success && booking != null)
+                    {
+                        createdBookings.Add(booking);
+                        _context.CartItems.Remove(cartItem);
+                    }
+                    else
+                    {
+                        // إذا فشل إنشاء الحجز (مثلاً بسبب race condition)، إزالة من العربة
+                        _context.CartItems.Remove(cartItem);
+                        _logger.LogWarning($"Failed to create booking for cart item {cartItem.Id}: {errorMessage}");
                     }
                 }
 
@@ -474,7 +556,7 @@ public class PaymentController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        var (success, errorMessage) = await _payPalService.ExecutePaymentAsync(paymentId, PayerID);
+        var (success, payPalExecuteError) = await _payPalService.ExecutePaymentAsync(paymentId, PayerID);
 
         if (success)
         {
@@ -489,22 +571,109 @@ public class PaymentController : Controller
             {
                 var roomsCount = int.TryParse(roomsCountStr, out var count) ? count : 1;
                 
-                var (bookingSuccess, _, booking) = await _bookingService.CreateBookingAsync(
+                // التحقق من التوفر مرة أخرى قبل إنشاء الحجز (لضمان عدم حجز نفس الرحلة من مستخدمين في نفس الوقت)
+                var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(travelPackageId);
+                
+                // التحقق من وجود إشعار صالح من قائمة الانتظار
+                bool userHasValidNotification = false;
+                if (isFull || remainingRooms <= 0)
+                {
+                    var waitingListEntry = await _context.WaitingListEntries
+                        .Where(w => w.UserId == user.Id && 
+                                   w.TravelPackageId == travelPackageId && 
+                                   w.IsActive &&
+                                   w.Position == 1 &&
+                                   w.NotifiedAt.HasValue &&
+                                   w.NotificationExpiresAt.HasValue &&
+                                   w.NotificationExpiresAt.Value > DateTime.UtcNow)
+                        .FirstOrDefaultAsync();
+                    
+                    userHasValidNotification = waitingListEntry != null;
+                }
+                
+                // إذا كانت الرحلة ممتلئة ولا يوجد إشعار صالح، توجيه المستخدم إلى قائمة الانتظار
+                if ((isFull || remainingRooms < roomsCount) && !userHasValidNotification)
+                {
+                    var travelPackage = await _context.TravelPackages
+                        .FirstOrDefaultAsync(t => t.Id == travelPackageId);
+                    
+                    HttpContext.Session.Remove("PayPalPaymentId");
+                    HttpContext.Session.Remove("PayPalUserId");
+                    HttpContext.Session.Remove("PayPalTravelPackageId");
+                    HttpContext.Session.Remove("PayPalRoomsCount");
+                    HttpContext.Session.Remove("PayPalCartItemIds");
+                    
+                    if (travelPackage != null)
+                    {
+                        TempData["Error"] = $"הריילה הזו כבר נמכרה. רק {remainingRooms} חדר/ים זמינים, אך מישהו אחר כבר הזמין אותם. אתה יכול להצטרף לרשימת ההמתנה. / This trip has been sold out. Only {remainingRooms} room(s) available, but someone else has already booked them. You can join the waiting list.";
+                        return RedirectToAction("JoinWaitingList", "Booking", new { travelPackageId = travelPackageId });
+                    }
+                    else
+                    {
+                        TempData["Error"] = "החבילה לא נמצאה. / Travel package not found.";
+                        return RedirectToAction("Gallery", "Trips");
+                    }
+                }
+                
+                // التحقق من أن العدد المطلوب متاح
+                if (remainingRooms < roomsCount && !userHasValidNotification)
+                {
+                    HttpContext.Session.Remove("PayPalPaymentId");
+                    HttpContext.Session.Remove("PayPalUserId");
+                    HttpContext.Session.Remove("PayPalTravelPackageId");
+                    HttpContext.Session.Remove("PayPalRoomsCount");
+                    HttpContext.Session.Remove("PayPalCartItemIds");
+                    
+                    TempData["Error"] = $"רק {remainingRooms} חדר/ים זמינים. / Only {remainingRooms} room(s) available.";
+                    return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+                }
+                
+                var (bookingSuccess, errorMessage, booking) = await _bookingService.CreateBookingAsync(
                     user.Id,
                     travelPackageId,
                     roomsCount);
 
-                if (bookingSuccess && booking != null)
+                if (!bookingSuccess || booking == null)
                 {
-                    createdBookings.Add(booking);
-
-                    var cartItem = await _context.CartItems
-                        .FirstOrDefaultAsync(c => c.UserId == user.Id && c.TravelPackageId == travelPackageId);
+                    // إذا فشل إنشاء الحجز (مثلاً بسبب race condition)، توجيه المستخدم إلى قائمة الانتظار
+                    var travelPackage = await _context.TravelPackages
+                        .FirstOrDefaultAsync(t => t.Id == travelPackageId);
                     
-                    if (cartItem != null)
+                    HttpContext.Session.Remove("PayPalPaymentId");
+                    HttpContext.Session.Remove("PayPalUserId");
+                    HttpContext.Session.Remove("PayPalTravelPackageId");
+                    HttpContext.Session.Remove("PayPalRoomsCount");
+                    HttpContext.Session.Remove("PayPalCartItemIds");
+                    
+                    if (travelPackage != null)
                     {
-                        _context.CartItems.Remove(cartItem);
+                        var (isFullNow, remainingRoomsNow) = await _bookingService.CheckAvailabilityAsync(travelPackageId);
+                        if (isFullNow || remainingRoomsNow <= 0)
+                        {
+                            TempData["Error"] = $"הריילה הזו כבר נמכרה. מישהו אחר כבר הזמין אותה. אתה יכול להצטרף לרשימת ההמתנה. / This trip has been sold out. Someone else has already booked it. You can join the waiting list.";
+                            return RedirectToAction("JoinWaitingList", "Booking", new { travelPackageId = travelPackageId });
+                        }
+                        else
+                        {
+                            TempData["Error"] = errorMessage ?? "לא ניתן ליצור הזמנה. אנא נסה שוב. / Unable to create booking. Please try again.";
+                            return RedirectToAction("Details", "Trips", new { id = travelPackageId });
+                        }
                     }
+                    else
+                    {
+                        TempData["Error"] = errorMessage ?? "לא ניתן ליצור הזמנה. / Unable to create booking.";
+                        return RedirectToAction("Gallery", "Trips");
+                    }
+                }
+
+                createdBookings.Add(booking);
+
+                var cartItem = await _context.CartItems
+                    .FirstOrDefaultAsync(c => c.UserId == user.Id && c.TravelPackageId == travelPackageId);
+                
+                if (cartItem != null)
+                {
+                    _context.CartItems.Remove(cartItem);
                 }
                 
                 await _context.SaveChangesAsync();
@@ -519,19 +688,34 @@ public class PaymentController : Controller
 
                 foreach (var cartItem in cartItems)
                 {
+                    // التحقق من التوفر مرة أخرى قبل إنشاء الحجز
                     var (isFull, remainingRooms) = await _bookingService.CheckAvailabilityAsync(cartItem.TravelPackageId);
-                    if (!isFull && remainingRooms >= cartItem.Quantity)
+                    
+                    if (isFull || remainingRooms < cartItem.Quantity)
                     {
-                        var (bookingSuccess, _, booking) = await _bookingService.CreateBookingAsync(
-                            user.Id,
-                            cartItem.TravelPackageId,
-                            cartItem.Quantity);
+                        // الرحلة ممتلئة، إزالة من العربة وإعلام المستخدم
+                        _context.CartItems.Remove(cartItem);
+                        _logger.LogInformation($"Removed cart item {cartItem.Id} for package {cartItem.TravelPackageId} - trip sold out. User: {user.Id}");
+                        
+                        // تخطي هذا العنصر والمتابعة للعناصر الأخرى
+                        continue;
+                    }
+                    
+                    var (bookingSuccess, errorMessage, booking) = await _bookingService.CreateBookingAsync(
+                        user.Id,
+                        cartItem.TravelPackageId,
+                        cartItem.Quantity);
 
-                        if (bookingSuccess && booking != null)
-                        {
-                            createdBookings.Add(booking);
-                            _context.CartItems.Remove(cartItem);
-                        }
+                    if (bookingSuccess && booking != null)
+                    {
+                        createdBookings.Add(booking);
+                        _context.CartItems.Remove(cartItem);
+                    }
+                    else
+                    {
+                        // إذا فشل إنشاء الحجز (مثلاً بسبب race condition)، إزالة من العربة
+                        _context.CartItems.Remove(cartItem);
+                        _logger.LogWarning($"Failed to create booking for cart item {cartItem.Id}: {errorMessage}");
                     }
                 }
 
@@ -610,7 +794,7 @@ public class PaymentController : Controller
         }
         else
         {
-            TempData["PaymentError"] = errorMessage ?? "תשלום PayPal נכשל.";
+            TempData["PaymentError"] = payPalExecuteError ?? "תשלום PayPal נכשל.";
             return RedirectToAction("Index", "Home");
         }
     }

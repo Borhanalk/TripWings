@@ -41,7 +41,6 @@
                                 <th>מדינה / Country</th>
                                 <th>מיקום / Position</th>
                                 <th>סה"כ ממתינים / Total Waiting</th>
-                                <th>זמן משוער / Estimated Wait</th>
                                 <th>תאריך הצטרפות / Joined At</th>
                                 <th>סטטוס / Status</th>
                                 <th>חדרים זמינים / Available Rooms</th>
@@ -58,16 +57,6 @@
                                         <span class="badge bg-primary fs-6">#@item.Position</span>
                                     </td>
                                     <td>@item.TotalWaiting</td>
-                                    <td>
-                                        @if (item.EstimatedWaitTime.HasValue)
-                                        {
-                                            <text>~@item.EstimatedWaitTime.Value.Days ימים / days</text>
-                                        }
-                                        else
-                                        {
-                                            <text>לא זמין / N/A</text>
-                                        }
-                                    </td>
                                     <td>@item.JoinedAt.ToString("dd/MM/yyyy")</td>
                                     <td>
                                         @if (item.IsPackageAvailable && item.WasPackageUpdated)

@@ -1,7 +1,193 @@
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = "מדיניות פרטיות / Privacy Policy";
 }
 
-<h1>@ViewData["Title"]</h1>
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h1 class="mb-0">
+                        <i class="bi bi-shield-lock me-2"></i>מדיניות פרטיות / Privacy Policy
+                    </h1>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <div class="mb-4">
+                        <p class="text-muted">
+                            <strong>עודכן לאחרונה / Last Updated:</strong> @DateTime.Now.ToString("dd/MM/yyyy")
+                        </p>
+                    </div>
 
-<p>Use this page to detail your site's privacy policy.</p>
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-info-circle me-2"></i>1. מבוא / Introduction
+                        </h2>
+                        <p>
+                            טריפווינגס (TripWings) מחויבת להגנה על פרטיות המשתמשים שלנו. מדיניות פרטיות זו מסבירה כיצד אנו אוספים, משתמשים, מגנים ומחשים את המידע האישי שלך בעת השימוש בפלטפורמה שלנו.
+                        </p>
+                        <p>
+                            TripWings is committed to protecting the privacy of our users. This privacy policy explains how we collect, use, protect, and disclose your personal information when using our platform.
+                        </p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-database me-2"></i>2. מידע שאנו אוספים / Information We Collect
+                        </h2>
+                        
+                        <h4 class="mt-3">2.1 מידע אישי / Personal Information</h4>
+                        <p>אנו אוספים את המידע הבא בעת הרשמה ושימוש בשירותים שלנו:</p>
+                        <p>We collect the following information when you register and use our services:</p>
+                        <ul>
+                            <li><strong>שם פרטי ושם משפחה / First Name and Last Name</strong></li>
+                            <li><strong>כתובת דוא"ל / Email Address</strong></li>
+                            <li><strong>סיסמה מוצפנת / Encrypted Password</strong></li>
+                            <li><strong>תאריך יצירת החשבון / Account Creation Date</strong></li>
+                        </ul>
+
+                        <h4 class="mt-4">2.2 מידע על הזמנות / Booking Information</h4>
+                        <p>אנו שומרים מידע על ההזמנות שלך, כולל:</p>
+                        <p>We store information about your bookings, including:</p>
+                        <ul>
+                            <li>פרטי חבילת הטיול / Travel package details</li>
+                            <li>מספר חדרים / Number of rooms</li>
+                            <li>תאריכי נסיעה / Travel dates</li>
+                            <li>סטטוס ההזמנה / Booking status</li>
+                        </ul>
+
+                        <h4 class="mt-4">2.3 מידע תשלום / Payment Information</h4>
+                        <p>
+                            <strong>חשוב מאוד / Very Important:</strong> אנו <strong>לא</strong> שומרים מידע על כרטיסי אשראי או פרטי תשלום רגישים אחרים. כל מידע תשלום מעובד בזמן אמת ולא נשמר במסד הנתונים שלנו.
+                        </p>
+                        <p>
+                            <strong>Very Important:</strong> We do <strong>NOT</strong> store credit card information or other sensitive payment details. All payment information is processed in real-time and is not saved in our database.
+                        </p>
+                        <p>אנו שומרים רק:</p>
+                        <p>We only store:</p>
+                        <ul>
+                            <li>סכום התשלום / Payment amount</li>
+                            <li>תאריך התשלום / Payment date</li>
+                            <li>אמצעי התשלום (כרטיס אשראי/PayPal) / Payment method (Credit Card/PayPal)</li>
+                            <li>סטטוס התשלום / Payment status</li>
+                        </ul>
+
+                        <h4 class="mt-4">2.4 מידע אחר / Other Information</h4>
+                        <ul>
+                            <li>פריטים בעגלת הקניות / Shopping cart items</li>
+                            <li>רשימת המתנה / Waiting list entries</li>
+                            <li>תגובות והערכות / Comments and ratings</li>
+                            <li>מידע על הארנק / Wallet information</li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-gear me-2"></i>3. כיצד אנו משתמשים במידע / How We Use Information
+                        </h2>
+                        <p>אנו משתמשים במידע שנאסף למטרות הבאות:</p>
+                        <p>We use the collected information for the following purposes:</p>
+                        <ul>
+                            <li>לספק ולשפר את השירותים שלנו / To provide and improve our services</li>
+                            <li>לעבד הזמנות ותשלומים / To process bookings and payments</li>
+                            <li>לשלוח הודעות אימייל אישור והתראות / To send confirmation emails and notifications</li>
+                            <li>לתקשר עם המשתמשים / To communicate with users</li>
+                            <li>לנהל את חשבון המשתמש / To manage user accounts</li>
+                            <li>לשפר את חוויית המשתמש / To improve user experience</li>
+                            <li>לעמוד בדרישות משפטיות / To comply with legal requirements</li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-shield-check me-2"></i>4. הגנה על המידע / Data Protection
+                        </h2>
+                        <p>אנו נוקטים באמצעי אבטחה מתקדמים כדי להגן על המידע האישי שלך:</p>
+                        <p>We employ advanced security measures to protect your personal information:</p>
+                        <ul>
+                            <li>הצפנת סיסמאות / Password encryption</li>
+                            <li>חיבורים מאובטחים (HTTPS) / Secure connections (HTTPS)</li>
+                            <li>גישה מוגבלת למידע / Limited access to information</li>
+                            <li>גיבויים קבועים / Regular backups</li>
+                            <li>מניעת שמירת מידע רגיש / Prevention of storing sensitive information</li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-share me-2"></i>5. שיתוף מידע / Information Sharing
+                        </h2>
+                        <p>אנו <strong>לא</strong> מוכרים, משכירים או מעבירים את המידע האישי שלך לצדדים שלישיים, למעט:</p>
+                        <p>We do <strong>NOT</strong> sell, rent, or transfer your personal information to third parties, except:</p>
+                        <ul>
+                            <li>שירותי תשלום (PayPal) - רק לצורך עיבוד תשלומים / Payment services (PayPal) - only for payment processing</li>
+                            <li>שירותי אימייל - לצורך שליחת הודעות / Email services - for sending messages</li>
+                            <li>כאשר נדרש על פי חוק / When required by law</li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-cookie me-2"></i>6. עוגיות (Cookies) / Cookies
+                        </h2>
+                        <p>אנו משתמשים בעוגיות (cookies) כדי לשפר את חוויית המשתמש. העוגיות משמשות ל:</p>
+                        <p>We use cookies to improve user experience. Cookies are used for:</p>
+                        <ul>
+                            <li>שמירת מצב התחברות / Maintaining login status</li>
+                            <li>שמירת העדפות משתמש / Storing user preferences</li>
+                            <li>ניתוח שימוש באתר / Analyzing website usage</li>
+                        </ul>
+                        <p>ניתן להשבית עוגיות בהגדרות הדפדפן שלך, אך זה עלול להשפיע על תפקוד האתר.</p>
+                        <p>You can disable cookies in your browser settings, but this may affect website functionality.</p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-person-check me-2"></i>7. זכויות המשתמש / User Rights
+                        </h2>
+                        <p>יש לך את הזכויות הבאות:</p>
+                        <p>You have the following rights:</p>
+                        <ul>
+                            <li>גישה למידע האישי שלך / Access to your personal information</li>
+                            <li>תיקון מידע שגוי / Correction of incorrect information</li>
+                            <li>מחיקת החשבון שלך / Deletion of your account</li>
+                            <li>התנגדות לעיבוד המידע / Objection to data processing</li>
+                            <li>הגבלת עיבוד המידע / Limitation of data processing</li>
+                        </ul>
+                        <p>למימוש זכויותיך, אנא צור קשר איתנו.</p>
+                        <p>To exercise your rights, please contact us.</p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-clock-history me-2"></i>8. שמירת מידע / Data Retention
+                        </h2>
+                        <p>אנו שומרים את המידע האישי שלך כל עוד החשבון שלך פעיל, או כנדרש על פי חוק. לאחר מחיקת החשבון, המידע יימחק תוך 30 יום, למעט מידע שנדרש לשמירה על פי חוק.</p>
+                        <p>We retain your personal information as long as your account is active, or as required by law. After account deletion, information will be deleted within 30 days, except information required to be retained by law.</p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-exclamation-triangle me-2"></i>9. שינויים במדיניות / Policy Changes
+                        </h2>
+                        <p>אנו עשויים לעדכן את מדיניות הפרטיות מעת לעת. שינויים משמעותיים יפורסמו באתר עם תאריך עדכון. המשך השימוש בשירותים לאחר השינויים מהווה הסכמה למדיניות המעודכנת.</p>
+                        <p>We may update this privacy policy from time to time. Significant changes will be published on the website with an update date. Continued use of services after changes constitutes agreement to the updated policy.</p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h2 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-envelope me-2"></i>10. יצירת קשר / Contact Us
+                        </h2>
+                        <p>אם יש לך שאלות או חששות לגבי מדיניות הפרטיות שלנו, אנא צור קשר:</p>
+                        <p>If you have questions or concerns about our privacy policy, please contact us:</p>
+                        <ul>
+                            <li><strong>דוא"ל / Email:</strong> borhankean@gmail.com</li>
+                            <li><strong>אתר / Website:</strong> TripWings</li>
+                        </ul>
+                    </section>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

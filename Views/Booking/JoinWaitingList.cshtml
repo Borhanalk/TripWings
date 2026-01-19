@@ -3,7 +3,6 @@
     var travelPackage = ViewBag.TravelPackage as TravelPackage;
     var position = ViewBag.Position as int? ?? 0;
     var totalWaiting = ViewBag.TotalWaiting as int? ?? 0;
-    var estimatedWait = ViewBag.EstimatedWait as TimeSpan?;
 }
 
 <h2>Waiting List: @travelPackage?.Destination</h2>
@@ -12,14 +11,6 @@
     <h4>You've been added to the waiting list!</h4>
     <p><strong>Your Position:</strong> #@position</p>
     <p><strong>Total Waiting:</strong> @totalWaiting person(s)</p>
-    @if (estimatedWait.HasValue)
-    {
-        <p><strong>Estimated Wait Time:</strong> Approximately @estimatedWait.Value.Days days</p>
-    }
-    else
-    {
-        <p><strong>Estimated Wait Time:</strong> Unable to estimate at this time</p>
-    }
 </div>
 
 <p>You will be notified when a room becomes available and it's your turn to book.</p>
