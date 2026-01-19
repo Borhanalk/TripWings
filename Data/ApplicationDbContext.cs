@@ -18,7 +18,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Discount> Discounts { get; set; }
     public DbSet<Booking> Bookings { get; set; }
     public DbSet<WaitingListEntry> WaitingListEntries { get; set; }
-    public DbSet<ReviewTrip> ReviewTrips { get; set; }
     public DbSet<ReviewService> ReviewServices { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<UserWallet> UserWallets { get; set; }
@@ -115,21 +114,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
                   .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasIndex(w => new { w.UserId, w.TravelPackageId });
-        });
-
-        builder.Entity<ReviewTrip>(entity =>
-        {
-            entity.HasOne(r => r.User)
-                  .WithMany(u => u.ReviewTrips)
-                  .HasForeignKey(r => r.UserId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(r => r.TravelPackage)
-                  .WithMany(t => t.ReviewTrips)
-                  .HasForeignKey(r => r.TravelPackageId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.ToTable(t => t.HasCheckConstraint("CK_ReviewTrip_Rating", "Rating >= 1 AND Rating <= 5"));
         });
 
         builder.Entity<ReviewService>(entity =>

@@ -27,7 +27,6 @@ public class TripsController : Controller
         decimal? maxPrice,
         DateTime? travelDateFrom,
         DateTime? travelDateTo,
-        bool? onSaleOnly = null,
         string sortBy = "date",
         string sortOrder = "asc")
     {
@@ -87,57 +86,6 @@ public class TripsController : Controller
         var maxEndDate = currentTime.AddDays(7);
 
         var trips = await query.ToListAsync();
-        
-        if (onSaleOnly == true)
-        {
-            var allDiscounts = await _context.Discounts
-                .Include(d => d.TravelPackage)
-                .ToListAsync();
-            
-            _logger.LogInformation($"=== DISCOUNT FILTER DEBUG ===");
-            _logger.LogInformation($"Total discounts in database: {allDiscounts.Count}");
-            _logger.LogInformation($"Current time (UTC): {currentTime}");
-            _logger.LogInformation($"Max end date (current + 7 days): {maxEndDate}");
-            
-            var activeDiscountIds = new List<int>();
-            
-            foreach (var discount in allDiscounts)
-            {
-                var isDateActive = discount.StartAt <= currentTime && discount.EndAt >= currentTime;
-                var isDurationValid = (discount.EndAt - discount.StartAt).TotalDays <= 7;
-                var isActive = isDateActive && isDurationValid;
-                var isVisible = discount.TravelPackage?.IsVisible ?? false;
-                var travelPackageId = discount.TravelPackageId;
-                
-                _logger.LogInformation($"Discount ID {discount.Id}: " +
-                    $"TravelPackageId={travelPackageId}, " +
-                    $"StartAt={discount.StartAt:yyyy-MM-dd HH:mm:ss}, " +
-                    $"EndAt={discount.EndAt:yyyy-MM-dd HH:mm:ss}, " +
-                    $"Duration={(discount.EndAt - discount.StartAt).TotalDays:F1} days, " +
-                    $"IsDateActive={isDateActive}, " +
-                    $"IsDurationValid={isDurationValid}, " +
-                    $"IsActive={isActive}, " +
-                    $"TravelPackageIsVisible={isVisible}");
-                
-                if (isActive && isVisible)
-                {
-                    activeDiscountIds.Add(discount.TravelPackageId);
-                }
-            }
-            
-            _logger.LogInformation($"Active discount TravelPackageIds: [{string.Join(", ", activeDiscountIds)}]");
-            _logger.LogInformation($"Total trips before filter: {trips.Count}");
-            
-            trips = trips.Where(t => 
-                t.Discounts != null && 
-                t.Discounts.Any(d => 
-                    d.StartAt <= currentTime && 
-                    d.EndAt >= currentTime && 
-                    (d.EndAt - d.StartAt).TotalDays <= 7)).ToList();
-            
-            _logger.LogInformation($"Total trips after filter: {trips.Count}");
-            _logger.LogInformation($"=== END DISCOUNT FILTER DEBUG ===");
-        }
 
         var tripViewModels = trips.Select(t => new TravelPackageViewModel
         {
@@ -209,7 +157,6 @@ public class TripsController : Controller
             MaxPrice = maxPrice,
             TravelDateFrom = travelDateFrom,
             TravelDateTo = travelDateTo,
-            OnSaleOnly = onSaleOnly ?? false,
             SortBy = sortBy,
             SortOrder = sortOrder,
             Destinations = destinations,
@@ -279,8 +226,6 @@ public class TripsController : Controller
             .Include(t => t.Discounts)
             .Include(t => t.Bookings) // Include bookings to calculate RemainingRooms correctly
             .Include(t => t.WaitingListEntries) // Include waiting list entries to show count
-            .Include(t => t.ReviewTrips)
-                .ThenInclude(r => r.User)
             .FirstOrDefaultAsync(m => m.Id == id);
 
         if (trip == null) return NotFound();

@@ -60,7 +60,6 @@ public class TravelPackage
     public ICollection<Discount> Discounts { get; set; } = new List<Discount>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
     public ICollection<WaitingListEntry> WaitingListEntries { get; set; } = new List<WaitingListEntry>();
-    public ICollection<ReviewTrip> ReviewTrips { get; set; } = new List<ReviewTrip>();
     public ICollection<CartItem> CartItems { get; set; } = new List<CartItem>();
 
     public bool IsAvailable => IsVisible && RemainingRooms > 0 && EndDate > DateTime.UtcNow;

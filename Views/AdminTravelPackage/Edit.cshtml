@@ -91,24 +91,67 @@
                             <span asp-validation-for="Description" class="text-danger"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="ImageUrls" class="form-label"></label>
-                            @if (Model.ImageUrlList.Any())
-                            {
-                                <div class="mb-2">
-                                    <strong>תמונות נוכחיות:</strong>
-                                    <div class="d-flex flex-wrap gap-2 mt-2">
-                                        @foreach (var imgUrl in Model.ImageUrlList)
-                                        {
-                                            <img src="@imgUrl" alt="תמונה" class="img-thumbnail" style="width: 100px; height: 75px; object-fit: cover;" />
-                                        }
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-images me-2"></i>תמונות / Images
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (Model.ImageUrlList.Any())
+                                {
+                                    <div class="mb-3">
+                                        <strong>תמונות נוכחיות / Current Images:</strong>
+                                        <div class="d-flex flex-wrap gap-2 mt-2">
+                                            @foreach (var imgUrl in Model.ImageUrlList)
+                                            {
+                                                <img src="@imgUrl" alt="תמונה" class="img-thumbnail" style="width: 100px; height: 75px; object-fit: cover;" />
+                                            }
+                                        </div>
                                     </div>
+                                    <hr class="my-3">
+                                }
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-upload me-2"></i>העלאת קבצים / Upload Files
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Image1" class="form-label">תמונה 1 / Image 1</label>
+                                            <input asp-for="Image1" type="file" class="form-control" accept="image/*" />
+                                            <span asp-validation-for="Image1" class="text-danger"></span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Image2" class="form-label">תמונה 2 / Image 2</label>
+                                            <input asp-for="Image2" type="file" class="form-control" accept="image/*" />
+                                            <span asp-validation-for="Image2" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">פורמטים נתמכים: JPG, PNG, GIF. גודל מקסימלי: 5MB / Supported formats: JPG, PNG, GIF. Maximum size: 5MB</small>
                                 </div>
-                            }
-                            <textarea asp-for="ImageUrls" class="form-control" rows="5" 
-                                      placeholder="הכנס כתובות תמונות חדשות (URL), מופרדות בפסיק או שורה חדשה"></textarea>
-                            <span asp-validation-for="ImageUrls" class="text-danger"></span>
-                            <small class="text-muted">הכנס תמונות חדשות כדי להחליף את התמונות הקיימות.</small>
+
+                                <hr class="my-3">
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-link-45deg me-2"></i>קישורי תמונות / Image URLs
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="ImageUrl1" class="form-label">כתובת תמונה 1 (URL) / Image URL 1</label>
+                                            <input asp-for="ImageUrl1" type="url" class="form-control" placeholder="https://example.com/image1.jpg" />
+                                            <span asp-validation-for="ImageUrl1" class="text-danger"></span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="ImageUrl2" class="form-label">כתובת תמונה 2 (URL) / Image URL 2</label>
+                                            <input asp-for="ImageUrl2" type="url" class="form-control" placeholder="https://example.com/image2.jpg" />
+                                            <span asp-validation-for="ImageUrl2" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">ניתן להשתמש בהעלאת קבצים או קישורים (או שניהם). השאר ריק כדי לשמור על התמונות הקיימות. / You can use file upload or URLs (or both). Leave empty to keep existing images.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -296,6 +339,45 @@
                         // If end date is before new min, update it
                         if (endDateInput.value && new Date(endDateInput.value) < startDate) {
                             endDateInput.value = startDate.toISOString().slice(0, 10);
+                        }
+                    }
+                });
+            }
+
+            // Validate image files
+            const image1Input = document.querySelector('input[type="file"][name="Image1"]');
+            const image2Input = document.querySelector('input[type="file"][name="Image2"]');
+            const editForm = document.querySelector('form[method="post"]');
+            
+            if (editForm) {
+                editForm.addEventListener('submit', function(e) {
+                    const files = [];
+                    if (image1Input && image1Input.files.length > 0) {
+                        files.push(image1Input.files[0]);
+                    }
+                    if (image2Input && image2Input.files.length > 0) {
+                        files.push(image2Input.files[0]);
+                    }
+                    
+                    if (files.length > 2) {
+                        e.preventDefault();
+                        alert('ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.');
+                        return false;
+                    }
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                        if (!allowedTypes.includes(file.type)) {
+                            e.preventDefault();
+                            alert('פורמט קובץ לא נתמך. פורמטים נתמכים: JPG, PNG, GIF / Unsupported file format. Supported formats: JPG, PNG, GIF');
+                            return false;
+                        }
+                        
+                        if (file.size > 5 * 1024 * 1024) {
+                            e.preventDefault();
+                            alert(`הקובץ ${file.name} גדול מדי. גודל מקסימלי: 5MB / File ${file.name} is too large. Maximum size: 5MB`);
+                            return false;
                         }
                     }
                 });

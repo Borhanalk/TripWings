@@ -101,11 +101,53 @@
                             <span asp-validation-for="Description" class="text-danger"></span>
                         </div>
 
-                        <div class="mb-3">
-                            <label asp-for="Images" class="form-label"></label>
-                            <input asp-for="Images" type="file" class="form-control" accept="image/*" multiple />
-                            <span asp-validation-for="Images" class="text-danger"></span>
-                            <small class="text-muted">ניתן להעלות עד 2 תמונות. פורמטים נתמכים: JPG, PNG, GIF / You can upload up to 2 images. Supported formats: JPG, PNG, GIF</small>
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-images me-2"></i>תמונות / Images
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-upload me-2"></i>העלאת קבצים / Upload Files
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Image1" class="form-label">תמונה 1 / Image 1</label>
+                                            <input asp-for="Image1" type="file" class="form-control" accept="image/*" />
+                                            <span asp-validation-for="Image1" class="text-danger"></span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="Image2" class="form-label">תמונה 2 / Image 2</label>
+                                            <input asp-for="Image2" type="file" class="form-control" accept="image/*" />
+                                            <span asp-validation-for="Image2" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">פורמטים נתמכים: JPG, PNG, GIF. גודל מקסימלי: 5MB / Supported formats: JPG, PNG, GIF. Maximum size: 5MB</small>
+                                </div>
+
+                                <hr class="my-3">
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">
+                                        <i class="bi bi-link-45deg me-2"></i>קישורי תמונות / Image URLs
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="ImageUrl1" class="form-label">כתובת תמונה 1 (URL) / Image URL 1</label>
+                                            <input asp-for="ImageUrl1" type="url" class="form-control" placeholder="https://example.com/image1.jpg" />
+                                            <span asp-validation-for="ImageUrl1" class="text-danger"></span>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="ImageUrl2" class="form-label">כתובת תמונה 2 (URL) / Image URL 2</label>
+                                            <input asp-for="ImageUrl2" type="url" class="form-control" placeholder="https://example.com/image2.jpg" />
+                                            <span asp-validation-for="ImageUrl2" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">ניתן להשתמש בהעלאת קבצים או קישורים (או שניהם) / You can use file upload or URLs (or both)</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3 form-check">
@@ -274,12 +316,20 @@
             }
 
             // Validate image files
-            const imagesInput = document.querySelector('input[type="file"][name="Images"]');
+            const image1Input = document.querySelector('input[type="file"][name="Image1"]');
+            const image2Input = document.querySelector('input[type="file"][name="Image2"]');
             const createForm = document.getElementById('createForm');
             
-            if (imagesInput && createForm) {
+            if (createForm) {
                 createForm.addEventListener('submit', function(e) {
-                    const files = imagesInput.files;
+                    const files = [];
+                    if (image1Input && image1Input.files.length > 0) {
+                        files.push(image1Input.files[0]);
+                    }
+                    if (image2Input && image2Input.files.length > 0) {
+                        files.push(image2Input.files[0]);
+                    }
+                    
                     if (files.length > 2) {
                         e.preventDefault();
                         alert('ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.');

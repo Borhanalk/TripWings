@@ -183,100 +183,124 @@ public class AdminTravelPackageController : Controller
             _logger.LogInformation($"Package {package.Id} created but no rooms available (AvailableRooms: {package.AvailableRooms}, BookedRooms: {bookedRooms}). No waiting list notification sent.");
         }
 
+        var packageImages = new List<PackageImage>();
+        var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "packages");
+        
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        // Process uploaded files (Image1 and Image2)
+        var uploadedFiles = new List<IFormFile>();
+        if (model.Image1 != null && model.Image1.Length > 0)
+        {
+            uploadedFiles.Add(model.Image1);
+        }
+        if (model.Image2 != null && model.Image2.Length > 0)
+        {
+            uploadedFiles.Add(model.Image2);
+        }
+
+        // Also support old Images field for backward compatibility
         if (model.Images != null && model.Images.Count > 0)
         {
-            if (model.Images.Count > 2)
-            {
-                ModelState.AddModelError("Images", "ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.");
-                return View("~/Views/AdminTravelPackage/Create.cshtml", model);
-            }
-
-            var packageImages = new List<PackageImage>();
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "packages");
-            
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            foreach (var imageFile in model.Images)
-            {
-                if (imageFile != null && imageFile.Length > 0)
-                {
-                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                    var fileExtension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        ModelState.AddModelError("Images", $"פורמט קובץ לא נתמך: {fileExtension}. פורמטים נתמכים: JPG, PNG, GIF / Unsupported file format: {fileExtension}. Supported formats: JPG, PNG, GIF");
-                        return View("~/Views/AdminTravelPackage/Create.cshtml", model);
-                    }
-
-                    if (imageFile.Length > 5 * 1024 * 1024)
-                    {
-                        ModelState.AddModelError("Images", $"הקובץ {imageFile.FileName} גדול מדי. גודל מקסימלי: 5MB / File {imageFile.FileName} is too large. Maximum size: 5MB");
-                        return View("~/Views/AdminTravelPackage/Create.cshtml", model);
-                    }
-
-                    var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(fileStream);
-                    }
-
-                    var imageUrl = $"/images/packages/{uniqueFileName}";
-                    packageImages.Add(new PackageImage
-                    {
-                        TravelPackageId = package.Id,
-                        ImageUrl = imageUrl
-                    });
-
-                    _logger.LogInformation($"✓ Image uploaded successfully: {uniqueFileName}");
-                }
-            }
-
-            if (packageImages.Any())
-            {
-                _context.PackageImages.AddRange(packageImages);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation($"✓ Package images saved successfully: PackageId={package.Id}, ImageCount={packageImages.Count}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"✗ Failed to save package images to database: {ex.Message}");
-                }
-            }
+            uploadedFiles.AddRange(model.Images.Where(img => img != null && img.Length > 0));
         }
-        else if (!string.IsNullOrWhiteSpace(model.ImageUrls))
-        {
-            var imageUrls = model.ImageUrls
-                .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(url => url.Trim())
-                .Where(url => !string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                .ToList();
 
-            if (imageUrls.Any())
+        if (uploadedFiles.Count > 2)
+        {
+            ModelState.AddModelError("Image1", "ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.");
+            return View("~/Views/AdminTravelPackage/Create.cshtml", model);
+        }
+
+        foreach (var imageFile in uploadedFiles)
+        {
+            if (imageFile != null && imageFile.Length > 0)
             {
-                var packageImages = imageUrls.Select(url => new PackageImage
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var fileExtension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    ModelState.AddModelError("Image1", $"פורמט קובץ לא נתמך: {fileExtension}. פורמטים נתמכים: JPG, PNG, GIF / Unsupported file format: {fileExtension}. Supported formats: JPG, PNG, GIF");
+                    return View("~/Views/AdminTravelPackage/Create.cshtml", model);
+                }
+
+                if (imageFile.Length > 5 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("Image1", $"הקובץ {imageFile.FileName} גדול מדי. גודל מקסימלי: 5MB / File {imageFile.FileName} is too large. Maximum size: 5MB");
+                    return View("~/Views/AdminTravelPackage/Create.cshtml", model);
+                }
+
+                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await imageFile.CopyToAsync(fileStream);
+                }
+
+                var imageUrl = $"/images/packages/{uniqueFileName}";
+                packageImages.Add(new PackageImage
                 {
                     TravelPackageId = package.Id,
-                    ImageUrl = url
-                }).ToList();
+                    ImageUrl = imageUrl
+                });
 
-                _context.PackageImages.AddRange(packageImages);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation($"✓ Package images saved successfully: PackageId={package.Id}, ImageCount={packageImages.Count}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"✗ Failed to save package images to database: {ex.Message}");
-                }
+                _logger.LogInformation($"✓ Image uploaded successfully: {uniqueFileName}");
+            }
+        }
+
+        // Process URL inputs (ImageUrl1 and ImageUrl2)
+        var imageUrls = new List<string>();
+        if (!string.IsNullOrWhiteSpace(model.ImageUrl1) && Uri.IsWellFormedUriString(model.ImageUrl1.Trim(), UriKind.Absolute))
+        {
+            imageUrls.Add(model.ImageUrl1.Trim());
+        }
+        if (!string.IsNullOrWhiteSpace(model.ImageUrl2) && Uri.IsWellFormedUriString(model.ImageUrl2.Trim(), UriKind.Absolute))
+        {
+            imageUrls.Add(model.ImageUrl2.Trim());
+        }
+
+        // Also support old ImageUrls field for backward compatibility
+        if (!string.IsNullOrWhiteSpace(model.ImageUrls))
+        {
+            var oldImageUrls = model.ImageUrls
+                .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(url => url.Trim())
+                .Where(url => !string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute));
+            imageUrls.AddRange(oldImageUrls);
+        }
+
+        // Limit total images to 2
+        if (packageImages.Count + imageUrls.Count > 2)
+        {
+            ModelState.AddModelError("ImageUrl1", "סה\"כ ניתן להוסיף עד 2 תמונות (קבצים + קישורים). / Total of 2 images allowed (files + URLs).");
+            return View("~/Views/AdminTravelPackage/Create.cshtml", model);
+        }
+
+        // Add URL-based images
+        foreach (var url in imageUrls)
+        {
+            packageImages.Add(new PackageImage
+            {
+                TravelPackageId = package.Id,
+                ImageUrl = url
+            });
+        }
+
+        if (packageImages.Any())
+        {
+            _context.PackageImages.AddRange(packageImages);
+            try
+            {
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"✓ Package images saved successfully: PackageId={package.Id}, ImageCount={packageImages.Count}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"✗ Failed to save package images to database: {ex.Message}");
             }
         }
 
@@ -296,6 +320,7 @@ public class AdminTravelPackageController : Controller
             return NotFound();
         }
 
+        var imageUrlList = package.PackageImages.Select(img => img.ImageUrl).ToList();
         var model = new AdminTravelPackageViewModel
         {
             Id = package.Id,
@@ -310,7 +335,9 @@ public class AdminTravelPackageController : Controller
             AgeLimit = package.AgeLimit,
             Description = package.Description,
             IsVisible = package.IsVisible,
-            ImageUrlList = package.PackageImages.Select(img => img.ImageUrl).ToList()
+            ImageUrlList = imageUrlList,
+            ImageUrl1 = imageUrlList.Count > 0 ? imageUrlList[0] : null,
+            ImageUrl2 = imageUrlList.Count > 1 ? imageUrlList[1] : null
         };
 
         return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
@@ -404,32 +431,129 @@ public class AdminTravelPackageController : Controller
             return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
         }
 
-        if (!string.IsNullOrWhiteSpace(model.ImageUrls))
+        // Process images if any are provided
+        var hasNewImages = (model.Image1 != null && model.Image1.Length > 0) ||
+                          (model.Image2 != null && model.Image2.Length > 0) ||
+                          !string.IsNullOrWhiteSpace(model.ImageUrl1) ||
+                          !string.IsNullOrWhiteSpace(model.ImageUrl2) ||
+                          !string.IsNullOrWhiteSpace(model.ImageUrls);
+
+        if (hasNewImages)
         {
-            var newImageUrls = model.ImageUrls
-                .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(url => url.Trim())
-                .Where(url => !string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute))
-                .ToList();
-
-            var oldImages = package.PackageImages.ToList();
-            _context.PackageImages.RemoveRange(oldImages);
-
-            if (newImageUrls.Any())
+            var packageImages = new List<PackageImage>();
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "packages");
+            
+            if (!Directory.Exists(uploadsFolder))
             {
-                var packageImages = newImageUrls.Select(url => new PackageImage
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            // Process uploaded files (Image1 and Image2)
+            var uploadedFiles = new List<IFormFile>();
+            if (model.Image1 != null && model.Image1.Length > 0)
+            {
+                uploadedFiles.Add(model.Image1);
+            }
+            if (model.Image2 != null && model.Image2.Length > 0)
+            {
+                uploadedFiles.Add(model.Image2);
+            }
+
+            if (uploadedFiles.Count > 2)
+            {
+                ModelState.AddModelError("Image1", "ניתן להעלות עד 2 תמונות בלבד. / You can upload up to 2 images only.");
+                return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
+            }
+
+            foreach (var imageFile in uploadedFiles)
+            {
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                    var fileExtension = Path.GetExtension(imageFile.FileName).ToLowerInvariant();
+                    
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        ModelState.AddModelError("Image1", $"פורמט קובץ לא נתמך: {fileExtension}. פורמטים נתמכים: JPG, PNG, GIF / Unsupported file format: {fileExtension}. Supported formats: JPG, PNG, GIF");
+                        return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
+                    }
+
+                    if (imageFile.Length > 5 * 1024 * 1024)
+                    {
+                        ModelState.AddModelError("Image1", $"הקובץ {imageFile.FileName} גדול מדי. גודל מקסימלי: 5MB / File {imageFile.FileName} is too large. Maximum size: 5MB");
+                        return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
+                    }
+
+                    var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                    var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(fileStream);
+                    }
+
+                    var imageUrl = $"/images/packages/{uniqueFileName}";
+                    packageImages.Add(new PackageImage
+                    {
+                        TravelPackageId = package.Id,
+                        ImageUrl = imageUrl
+                    });
+
+                    _logger.LogInformation($"✓ Image uploaded successfully: {uniqueFileName}");
+                }
+            }
+
+            // Process URL inputs (ImageUrl1 and ImageUrl2)
+            var imageUrls = new List<string>();
+            if (!string.IsNullOrWhiteSpace(model.ImageUrl1) && Uri.IsWellFormedUriString(model.ImageUrl1.Trim(), UriKind.Absolute))
+            {
+                imageUrls.Add(model.ImageUrl1.Trim());
+            }
+            if (!string.IsNullOrWhiteSpace(model.ImageUrl2) && Uri.IsWellFormedUriString(model.ImageUrl2.Trim(), UriKind.Absolute))
+            {
+                imageUrls.Add(model.ImageUrl2.Trim());
+            }
+
+            // Also support old ImageUrls field for backward compatibility
+            if (!string.IsNullOrWhiteSpace(model.ImageUrls))
+            {
+                var oldImageUrls = model.ImageUrls
+                    .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(url => url.Trim())
+                    .Where(url => !string.IsNullOrWhiteSpace(url) && Uri.IsWellFormedUriString(url, UriKind.Absolute));
+                imageUrls.AddRange(oldImageUrls);
+            }
+
+            // Limit total images to 2
+            if (packageImages.Count + imageUrls.Count > 2)
+            {
+                ModelState.AddModelError("ImageUrl1", "סה\"כ ניתן להוסיף עד 2 תמונות (קבצים + קישורים). / Total of 2 images allowed (files + URLs).");
+                return View("~/Views/AdminTravelPackage/Edit.cshtml", model);
+            }
+
+            // Add URL-based images
+            foreach (var url in imageUrls)
+            {
+                packageImages.Add(new PackageImage
                 {
                     TravelPackageId = package.Id,
                     ImageUrl = url
-                }).ToList();
+                });
+            }
 
+            // Remove old images and add new ones
+            var oldImages = package.PackageImages.ToList();
+            _context.PackageImages.RemoveRange(oldImages);
+
+            if (packageImages.Any())
+            {
                 _context.PackageImages.AddRange(packageImages);
             }
             
             try
             {
                 var savedChanges = await _context.SaveChangesAsync();
-                _logger.LogInformation($"✓ Package images updated successfully: PackageId={package.Id}, ImageCount={newImageUrls.Count}, SavedChanges={savedChanges}");
+                _logger.LogInformation($"✓ Package images updated successfully: PackageId={package.Id}, ImageCount={packageImages.Count}, SavedChanges={savedChanges}");
             }
             catch (Exception ex)
             {

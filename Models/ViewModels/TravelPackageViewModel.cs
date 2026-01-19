@@ -59,10 +59,22 @@ public class AdminTravelPackageViewModel
     [Display(Name = "נראה")]
     public bool IsVisible { get; set; } = true;
 
+    [Display(Name = "כתובת תמונה 1 (URL) / Image URL 1")]
+    public string? ImageUrl1 { get; set; }
+
+    [Display(Name = "כתובת תמונה 2 (URL) / Image URL 2")]
+    public string? ImageUrl2 { get; set; }
+
     [Display(Name = "כתובות תמונות (מופרדות בפסיק או שורה חדשה)")]
     public string? ImageUrls { get; set; }
 
     public List<string> ImageUrlList { get; set; } = new();
+
+    [Display(Name = "תמונה 1 (קובץ) / Image 1 (File)")]
+    public IFormFile? Image1 { get; set; }
+
+    [Display(Name = "תמונה 2 (קובץ) / Image 2 (File)")]
+    public IFormFile? Image2 { get; set; }
 
     [Display(Name = "תמונות (עד 2 תמונות) / Images (up to 2 images)")]
     public List<IFormFile>? Images { get; set; }

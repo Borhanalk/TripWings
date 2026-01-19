@@ -14,7 +14,6 @@ public class TripGalleryViewModel
     public decimal? MaxPrice { get; set; }
     public DateTime? TravelDateFrom { get; set; }
     public DateTime? TravelDateTo { get; set; }
-    public bool OnSaleOnly { get; set; }
 
     public string SortBy { get; set; } = "date"; // price-asc, price-desc, popular, category, date
     public string SortOrder { get; set; } = "asc";
