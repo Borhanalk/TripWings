@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using TripWings.Data;
 using TripWings.Models;
 
@@ -13,6 +14,7 @@ public static class SeedData
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
 
 
@@ -61,8 +63,18 @@ public static class SeedData
             }
         }
 
-        var adminEmail = "admin@tripwings.com";
-        var adminPassword = "Admin@123";
+        var adminEmail = configuration["AdminSettings:Email"];
+        var adminPassword = configuration["AdminSettings:Password"];
+        var adminFirstName = configuration["AdminSettings:FirstName"] ?? "Admin";
+        var adminLastName = configuration["AdminSettings:LastName"] ?? "User";
+
+        if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+        {
+            var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
+            var logger = loggerFactory?.CreateLogger("SeedData");
+            logger?.LogWarning("Admin email or password not configured in appsettings.json. Skipping admin user creation.");
+            return;
+        }
 
         if (await userManager.FindByEmailAsync(adminEmail) == null)
         {
@@ -70,8 +82,8 @@ public static class SeedData
             {
                 UserName = adminEmail,
                 Email = adminEmail,
-                FirstName = "Admin",
-                LastName = "User",
+                FirstName = adminFirstName,
+                LastName = adminLastName,
                 EmailConfirmed = true
             };
 
